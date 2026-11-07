@@ -1,0 +1,43 @@
+[project]
+name = "mediflow-ai"
+version = "0.1.0"
+description = "MediFlow AI prescription service: OCR -> entity extraction -> DGDA normalisation -> per-field confidence"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi==0.162.1",
+    "uvicorn==0.54.0",
+    "pydantic==2.14.3",
+    "aio-pika==10.2.2",
+    "rapidfuzz==3.14.6",
+    "opencv-python-headless==5.0.0.93",
+    "numpy==2.4.6",
+    "prometheus-client==0.26.0",
+    "httpx==0.28.1",
+    "minio==7.2.20",
+    "jsonschema==4.26.0",
+    "pillow==13.0.0",
+]
+
+[project.optional-dependencies]
+# Heavy OCR engines are optional; the service selects one at runtime (MEDIFLOW_AI_OCR_BACKEND).
+paddle = ["paddleocr==2.10.0", "paddlepaddle==3.0.0"]
+tesseract = ["pytesseract==0.3.13"]   # also needs the tesseract binary (apt-get install tesseract-ocr)
+dev = ["pytest==9.2.0", "pytest-asyncio==1.4.1.post1"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["mediflow_ai*"]
+
+[tool.setuptools.package-data]
+mediflow_ai = ["data/*.json", "data/*.csv", "schemas/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "real_ocr: needs a real OCR engine (PaddleOCR or Tesseract); skipped if unavailable",
+    "rabbitmq: needs a running RabbitMQ (MEDIFLOW_AI_TEST_AMQP_URL); skipped otherwise",
+]

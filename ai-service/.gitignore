@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+# model weights / calibrators are volume-mounted or baked at image build, never committed
+models/*
+!models/.gitkeep
+*.onnx
+*.pdparams
+*.pdmodel
+*.traineddata
+eval/out/
+eval/synthetic/

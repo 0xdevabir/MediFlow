@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediflow.local/schemas/ai-rx-request.schema.json",
+  "title": "AI prescription job request (queue ai.rx.requests)",
+  "description": "Published by the backend (T06). Carries NO patient identifiers.",
+  "type": "object",
+  "required": ["jobId", "encounterId", "inputType", "locale"],
+  "additionalProperties": false,
+  "properties": {
+    "jobId": {"type": "string", "minLength": 1, "maxLength": 64},
+    "encounterId": {"type": "string", "minLength": 1, "maxLength": 64},
+    "inputType": {"enum": ["IMAGE", "TEXT"]},
+    "objectKey": {"type": ["string", "null"], "maxLength": 1024},
+    "text": {"type": ["string", "null"], "maxLength": 20000},
+    "locale": {"type": "string", "maxLength": 16}
+  },
+  "allOf": [
+    {"if": {"properties": {"inputType": {"const": "IMAGE"}}},
+     "then": {"required": ["objectKey"], "properties": {"objectKey": {"type": "string", "minLength": 1}}}},
+    {"if": {"properties": {"inputType": {"const": "TEXT"}}},
+     "then": {"required": ["text"], "properties": {"text": {"type": "string"}}}}
+  ]
+}

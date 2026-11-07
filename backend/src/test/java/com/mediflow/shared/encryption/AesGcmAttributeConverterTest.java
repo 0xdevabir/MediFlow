@@ -21,6 +21,24 @@ class AesGcmAttributeConverterTest {
   }
 
   @Test
+  void randomIvGivesDifferentCiphertexts() {
+    AesGcmAttributeConverter converter = new AesGcmAttributeConverter();
+    assertThat(converter.convertToDatabaseColumn("01711000000"))
+        .isNotEqualTo(converter.convertToDatabaseColumn("01711000000"));
+  }
+
+  @Test
+  void tamperedCiphertextIsRejected() {
+    AesGcmAttributeConverter converter = new AesGcmAttributeConverter();
+    byte[] raw = java.util.Base64.getDecoder().decode(converter.convertToDatabaseColumn("secret"));
+    raw[raw.length - 1] ^= 0x01;
+    String tampered = java.util.Base64.getEncoder().encodeToString(raw);
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> converter.convertToEntityAttribute(tampered))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
   void nullSafe() {
     AesGcmAttributeConverter converter = new AesGcmAttributeConverter();
     assertThat(converter.convertToDatabaseColumn(null)).isNull();

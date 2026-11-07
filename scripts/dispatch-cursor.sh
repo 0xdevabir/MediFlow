@@ -56,7 +56,8 @@ Working directory: $wt (git branch $branch). Research files are in research/ (if
    (Commit + push many times, not once at the end. Never commit secrets, .env files, build output, target/, .venv or node_modules.)
 6. Java 21 is at /opt/homebrew/opt/openjdk@21 (JAVA_HOME already exported). Use the Maven wrapper (./mvnw). For Python use 'uv'.
 7. When done, write docs/plan/reports/$id.md (built, deviations, open issues, note that tests were not run), commit and push it.
-Never push to main, never force-push, never merge. Never weaken the safety invariants in PLAN.md section 6."
+Never push to main, never force-push, never merge. Never weaken the safety invariants in PLAN.md section 6.
+${EXTRA_PROMPT:-}"
 
   echo "▶ $id → $wt (log: $LOG_DIR/$id.log)"
   ( cd "$wt" && "$AGENT" -p --force --trust --approve-mcps --add-dir "$REPO/research" \

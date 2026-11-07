@@ -46,14 +46,16 @@ run_task() {
   local prompt
   prompt="You are a Cursor agent implementing one task of the MediFlow AI project.
 Working directory: $wt (git branch $branch). Research files are in research/ (if missing, read them from $REPO/research/).
-1. Read docs/plan/PLAN.md and docs/plan/CONVENTIONS.md completely.
-2. Read and implement docs/plan/tasks/$slug.md completely. Stay inside the paths listed under 'Owns'.
-3. If you need a change outside your paths, write it to docs/plan/requests/$id.md instead of editing.
-4. Work in small increments. After EVERY small feature that compiles and whose tests pass:
+0. A previous agent may already have started this task in this worktree: first run 'git status' and 'git log --oneline main..HEAD' and CONTINUE from the existing files (commit any good uncommitted work first). Do not start over.
+1. Read docs/plan/PLAN.md, docs/plan/CONVENTIONS.md and docs/plan/reports/T00.md (actual entity/event/port names; they override the plan). Also read any docs/plan/reports/*.md already on main (git show origin/main:docs/plan/reports/T01.md etc.) for modules you depend on.
+2. Read and implement docs/plan/tasks/$slug.md completely. Stay inside the paths listed under 'Owns'. Other agents work in parallel on other modules: never edit shared/, pom.xml, application*.yml, layout templates or the V1 baseline.
+3. If you need a change outside your paths, write it to docs/plan/requests/$id.md instead of editing. For capabilities of other modules not in shared ports, define a minimal interface in your own package with a safe default.
+4. USER RULES: do NOT run tests (no mvnw verify / test, no pytest runs) and NEVER start Docker. Optionally run './mvnw -q -DskipTests test-compile' from backend/ to catch compile errors. Write tests as code anyway.
+5. Work in small increments. After EVERY small feature:
    git add -A && git commit -m '$id: <short feature summary>' && git push -u origin $branch
-   (Commit + push many times, not once at the end. Never commit secrets, .env files, build output or node_modules.)
-5. Java 21 is at /opt/homebrew/opt/openjdk@21 (JAVA_HOME already exported). Use the Maven wrapper (./mvnw). Docker is available for Testcontainers. For Python use 'uv' (uv python install 3.11, uv venv, uv pip).
-6. When everything is done and green, write docs/plan/reports/$id.md (built, deviations, open issues, how to test), commit and push it.
+   (Commit + push many times, not once at the end. Never commit secrets, .env files, build output, target/, .venv or node_modules.)
+6. Java 21 is at /opt/homebrew/opt/openjdk@21 (JAVA_HOME already exported). Use the Maven wrapper (./mvnw). For Python use 'uv'.
+7. When done, write docs/plan/reports/$id.md (built, deviations, open issues, note that tests were not run), commit and push it.
 Never push to main, never force-push, never merge. Never weaken the safety invariants in PLAN.md section 6."
 
   echo "▶ $id → $wt (log: $LOG_DIR/$id.log)"

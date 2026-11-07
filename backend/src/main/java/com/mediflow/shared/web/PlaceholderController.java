@@ -8,22 +8,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class PlaceholderController {
 
-  @GetMapping({
-    "/patients",
-    "/directory",
-    "/appointments",
-    "/queue",
-    "/consultations",
-    "/prescriptions",
-    "/lab",
-    "/pharmacy",
-    "/admin",
-    "/audit/me"
-  })
-  public String moduleRoot(Model model) {
-    model.addAttribute("pageTitleKey", "comingsoon.title");
-    model.addAttribute("modulePath", "module");
-    return "coming-soon";
+  // Real modules now own their root URLs; only legacy aliases remain here.
+  @GetMapping("/consultations")
+  public String consultationsAlias() {
+    return "redirect:/clinical/consultations";
   }
 
   @GetMapping("/modules/{module}")

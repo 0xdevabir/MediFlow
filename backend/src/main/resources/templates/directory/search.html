@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('directory.search.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1" th:text="#{directory.search.title}">Find hospitals &amp; doctors</h1>
+      <p class="text-muted mb-0" th:text="#{directory.search.intro}">Search without signing in.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" th:href="@{/directory/tests}" th:text="#{directory.tests.link}">Direct tests</a>
+      <a class="btn btn-outline-secondary btn-sm" sec:authorize="hasRole('ADMIN')"
+         th:href="@{/directory/admin}" th:text="#{directory.admin.link}">Manage directory</a>
+    </div>
+  </div>
+
+  <form class="row g-2 align-items-end mb-4" method="get" th:action="@{/directory/search}">
+    <div class="col-md-3">
+      <label class="form-label" for="q" th:text="#{directory.search.query}">Search</label>
+      <input class="form-control" id="q" name="q" th:value="${criteria.q}"
+             th:placeholder="#{directory.search.query.placeholder}"/>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="hospitalId" th:text="#{directory.search.hospital}">Hospital</label>
+      <select class="form-select" id="hospitalId" name="hospitalId">
+        <option value="" th:text="#{directory.search.any}">Any</option>
+        <option th:each="h : ${hospitals}" th:value="${h.id()}" th:text="${h.label()}"
+                th:selected="${criteria.hospitalId != null and criteria.hospitalId.equals(h.id())}"></option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="department" th:text="#{directory.search.department}">Department</label>
+      <select class="form-select" id="department" name="department">
+        <option value="" th:text="#{directory.search.any}">Any</option>
+        <option th:each="d : ${departments}" th:value="${d}" th:text="${d}"
+                th:selected="${criteria.department != null and criteria.department.equals(d)}"></option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="date" th:text="#{directory.search.date}">Date</label>
+      <input class="form-control" type="date" id="date" name="date" th:value="${criteria.date}"/>
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-teal w-100" type="submit" th:text="#{directory.search.submit}">Search</button>
+    </div>
+  </form>
+
+  <section class="mb-4" th:if="${!result.hospitals().isEmpty()}">
+    <h2 class="h5 mb-3" th:text="#{directory.hospitals.heading}">Hospitals</h2>
+    <div class="row g-3">
+      <div class="col-md-6" th:each="h : ${result.hospitals()}">
+        <article class="border rounded p-3 h-100 bg-white">
+          <h3 class="h6 mb-1">
+            <span th:text="${h.name()}">Hospital</span>
+            <span class="badge text-bg-secondary ms-1" th:if="${h.isBranch()}" th:text="#{directory.hospital.branch}">Branch</span>
+          </h3>
+          <p class="small text-muted mb-2" th:if="${h.parentName() != null}">
+            <span th:text="#{directory.hospital.ofParent}">Part of</span>
+            <span th:text="${h.parentName()}"></span>
+          </p>
+          <dl class="row small mb-0">
+            <dt class="col-4" th:text="#{directory.hospital.address}">Address</dt>
+            <dd class="col-8" th:text="${h.address()}">—</dd>
+            <dt class="col-4" th:text="#{directory.hospital.hours}">Hours</dt>
+            <dd class="col-8" th:text="${h.openingHours()}">—</dd>
+            <dt class="col-4" th:text="#{directory.hospital.phone}">Phone</dt>
+            <dd class="col-8" th:text="${h.phone()}">—</dd>
+            <dt class="col-4" th:text="#{directory.hospital.emergency}">Emergency</dt>
+            <dd class="col-8 fw-semibold" th:text="${h.emergencyPhone()}">—</dd>
+            <dt class="col-4" th:text="#{directory.hospital.ambulance}">Ambulance</dt>
+            <dd class="col-8 fw-semibold" th:text="${h.ambulancePhone()}">—</dd>
+            <dt class="col-4" th:text="#{directory.hospital.updated}">Updated</dt>
+            <dd class="col-8" th:text="${h.lastUpdatedLocal()}">—</dd>
+            <dt class="col-4" th:text="#{directory.hospital.departments}">Departments</dt>
+            <dd class="col-8">
+              <span th:if="${h.clinicalDepartments().isEmpty()}">—</span>
+              <span th:each="d, iter : ${h.clinicalDepartments()}"
+                    th:text="${iter.last} ? ${d} : ${d} + ', '"></span>
+            </dd>
+          </dl>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <h2 class="h5 mb-3" th:text="#{directory.doctors.heading}">Doctors</h2>
+    <p class="text-muted" th:if="${result.doctors().isEmpty()}" th:text="#{directory.doctors.empty}">No doctors matched.</p>
+    <div class="row g-3">
+      <div class="col-md-6" th:each="d : ${result.doctors()}">
+        <article class="border rounded p-3 h-100 bg-white">
+          <h3 class="h6 mb-0" th:text="${d.name()}">Doctor</h3>
+          <p class="small text-muted mb-2">
+            <span th:text="${d.specialty()}">Specialty</span>
+            <span th:if="${d.specialty() != null and d.roleLabel() != null}"> · </span>
+            <span th:text="${d.roleLabel()}"></span>
+          </p>
+          <p class="small mb-2">
+            <span th:text="${d.hospitalName()}"></span>
+            <span th:if="${d.departmentName() != null}"> — </span>
+            <span th:text="${d.departmentName()}"></span>
+          </p>
+          <div>
+            <div class="small fw-semibold mb-1" th:text="#{directory.doctors.nextSlots}">Next free slots</div>
+            <p class="small text-muted mb-0" th:if="${d.freeSlots().isEmpty()}" th:text="#{directory.doctors.noSlots}">None in range.</p>
+            <ul class="list-unstyled small mb-0" th:if="${!d.freeSlots().isEmpty()}">
+              <li th:each="s : ${d.freeSlots()}">
+                <span th:text="${#temporals.format(s.localStart(), 'yyyy-MM-dd HH:mm')}"></span>
+                <span>–</span>
+                <span th:text="${#temporals.format(s.localEnd(), 'HH:mm')}"></span>
+                <span class="text-muted" th:text="'(' + ${s.remaining()} + ')'"></span>
+              </li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

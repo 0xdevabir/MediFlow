@@ -61,9 +61,17 @@
   </div>
 </nav>
 
+<!--/* Flash: controllers add redirect flash attributes either as resolved text
+     (successMessage / errorMessage) or as message keys (successKey / errorKey). */-->
 <div th:fragment="flash">
-  <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-  <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+  <div th:if="${successMessage != null or successKey != null}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <span th:text="${successKey != null ? #messages.msg(successKey) : successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" th:aria-label="#{flash.close}"></button>
+  </div>
+  <div th:if="${errorMessage != null or errorKey != null}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <span th:text="${errorKey != null ? #messages.msg(errorKey) : errorMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" th:aria-label="#{flash.close}"></button>
+  </div>
 </div>
 
 <th:block th:fragment="scripts">

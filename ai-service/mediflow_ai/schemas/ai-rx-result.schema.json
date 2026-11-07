@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediflow.local/schemas/ai-rx-result.schema.json",
+  "title": "AI prescription job result (queue ai.rx.results)",
+  "description": "Published by the AI service (T09). A draft only: the backend (T06) computes item confidence = min(drug, dose, frequency), runs the contradiction engine and applies the 0.85 gate.",
+  "type": "object",
+  "required": ["jobId", "status", "items", "timingsMs", "modelVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "jobId": {"type": "string"},
+    "status": {"enum": ["OK", "UNREADABLE", "ERROR"]},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/item"}},
+    "timingsMs": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "modelVersion": {"type": "string"}
+  },
+  "$defs": {
+    "nullableString": {"type": ["string", "null"]},
+    "unit": {"type": "number", "minimum": 0, "maximum": 1},
+    "item": {
+      "type": "object",
+      "required": ["raw", "brand", "generic", "atc", "strength", "form", "dose", "route", "frequency", "duration", "conf"],
+      "additionalProperties": false,
+      "properties": {
+        "raw": {"type": "string"},
+        "brand": {"$ref": "#/$defs/nullableString"},
+        "generic": {"$ref": "#/$defs/nullableString"},
+        "atc": {"$ref": "#/$defs/nullableString"},
+        "strength": {"$ref": "#/$defs/nullableString"},
+        "form": {"$ref": "#/$defs/nullableString"},
+        "dose": {"$ref": "#/$defs/nullableString"},
+        "route": {"$ref": "#/$defs/nullableString"},
+        "frequency": {"$ref": "#/$defs/nullableString"},
+        "duration": {"$ref": "#/$defs/nullableString"},
+        "conf": {
+          "type": "object",
+          "required": ["drug", "dose", "frequency", "route", "duration"],
+          "additionalProperties": false,
+          "properties": {
+            "drug": {"$ref": "#/$defs/unit"},
+            "dose": {"$ref": "#/$defs/unit"},
+            "frequency": {"$ref": "#/$defs/unit"},
+            "route": {"$ref": "#/$defs/unit"},
+            "duration": {"$ref": "#/$defs/unit"}
+          }
+        }
+      }
+    }
+  }
+}

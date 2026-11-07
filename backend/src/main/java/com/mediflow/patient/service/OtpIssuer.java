@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
  * of the code is stored; a new code invalidates the previous one.
  */
 @Component
-class OtpIssuer {
+public class OtpIssuer {
 
   static final Duration TTL = Duration.ofMinutes(10);
   static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
@@ -37,7 +37,7 @@ class OtpIssuer {
   private final MessageSource messages;
   private final ClockPort clock;
 
-  OtpIssuer(
+  public OtpIssuer(
       ContactVerificationRepository verifications,
       NotificationPort notifications,
       MessageSource messages,
@@ -49,7 +49,7 @@ class OtpIssuer {
   }
 
   /** Returns the new verification row; throws when the cooldown is active or no target exists. */
-  ContactVerification issue(Patient patient, ContactChannel channel) {
+  public ContactVerification issue(Patient patient, ContactChannel channel) {
     String target = channel == ContactChannel.SMS ? patient.getPhone() : patient.getEmail();
     if (target == null || target.isBlank()) {
       throw new PatientRuleException("patient.otp.noTarget");
@@ -88,7 +88,7 @@ class OtpIssuer {
     return v;
   }
 
-  enum Outcome {
+  public enum Outcome {
     VERIFIED,
     WRONG_CODE,
     EXPIRED,
@@ -96,7 +96,7 @@ class OtpIssuer {
     NO_PENDING_CODE
   }
 
-  Outcome check(UUID patientId, ContactChannel channel, String code) {
+  public Outcome check(UUID patientId, ContactChannel channel, String code) {
     Optional<ContactVerification> latest =
         verifications.findFirstByPatientIdAndChannelAndConsumedAtIsNullOrderByCreatedAtDesc(
             patientId, channel);

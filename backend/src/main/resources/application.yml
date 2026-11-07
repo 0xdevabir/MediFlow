@@ -75,8 +75,8 @@ mediflow:
   field-encryption-key: ${MEDIFLOW_FIELD_ENCRYPTION_KEY:}
   identity:
     mfa:
-      # unset/default = enforce unless the active profile is `dev` (see MfaEnforcement)
-      enforce: ${MEDIFLOW_MFA_ENFORCE:}
+      # Override with mediflow.identity.mfa.enforce=true|false (see MfaEnforcement).
+      # application-dev.yml sets enforce: false.
   fhir:
     base-url: ${MEDIFLOW_FHIR_BASE_URL:http://localhost/fhir/r4}
   notification:

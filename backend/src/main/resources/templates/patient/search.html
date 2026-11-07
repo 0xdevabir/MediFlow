@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('patient.search.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0" th:text="#{patient.search.title}">Patients</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-secondary" th:href="@{/patients/changes}" sec:authorize="hasRole('FRONT_DESK')"
+         th:text="#{patient.change.listTitle}">Change requests</a>
+      <a class="btn btn-sm btn-teal" th:href="@{/patients/walk-in}" sec:authorize="hasRole('FRONT_DESK')"
+         th:text="#{patient.walkin.title}">Walk-in</a>
+    </div>
+  </div>
+  <form class="row g-2 mb-4" method="get" th:action="@{/patients/search}">
+    <div class="col-md-8">
+      <input class="form-control" type="search" name="q" th:value="${q}" th:placeholder="#{patient.search.placeholder}"/>
+    </div>
+    <div class="col-md-4">
+      <button class="btn btn-teal w-100" type="submit" th:text="#{patient.search.submit}">Search</button>
+    </div>
+  </form>
+  <div class="list-group" th:if="${results != null and !results.isEmpty()}">
+    <a class="list-group-item list-group-item-action"
+       th:each="p : ${results}"
+       th:href="@{/patients/{id}(id=${p.id()})}">
+      <div class="d-flex justify-content-between">
+        <strong th:text="${p.fullName()}">Name</strong>
+        <span class="text-muted" th:text="${p.mrn()}">MRN</span>
+      </div>
+      <small class="text-muted" th:text="${p.dateOfBirth()}">DOB</small>
+    </a>
+  </div>
+  <p class="text-muted" th:if="${q != null and (results == null or results.isEmpty())}" th:text="#{patient.search.empty}">No matches</p>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

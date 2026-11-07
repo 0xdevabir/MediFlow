@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('patient.profile.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="h3 mb-1" th:text="${patient.fullName()}">Patient</h1>
+      <p class="mb-0 text-muted">
+        <span th:text="#{patient.field.mrn}">MRN</span>:
+        <strong th:text="${patient.mrn()}">MF-…</strong>
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary" th:href="@{/patients/{id}/card(id=${patient.id()})}"
+       th:text="#{patient.card.print}">Print card</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <section class="mb-4">
+        <h2 class="h5" th:text="#{patient.profile.demographics}">Demographics</h2>
+        <dl class="row mb-0">
+          <dt class="col-sm-4" th:text="#{patient.field.dob}">DOB</dt>
+          <dd class="col-sm-8" th:text="${patient.dateOfBirth()}">—</dd>
+          <dt class="col-sm-4" th:text="#{patient.field.sex}">Sex</dt>
+          <dd class="col-sm-8" th:text="${patient.sex()}">—</dd>
+          <dt class="col-sm-4" th:text="#{patient.field.nationalId}">National ID</dt>
+          <dd class="col-sm-8" th:text="${patient.nationalIdMasked()} ?: '—'">—</dd>
+          <dt class="col-sm-4" th:text="#{patient.field.phone}">Phone</dt>
+          <dd class="col-sm-8">
+            <span th:text="${patient.phone()} ?: '—'">—</span>
+            <span class="badge text-bg-success" th:if="${patient.phoneVerified()}" th:text="#{patient.badge.verified}">verified</span>
+            <span class="badge text-bg-warning" th:if="${patient.phone() != null and !patient.phoneVerified()}" th:text="#{patient.badge.unverified}">unverified</span>
+          </dd>
+          <dt class="col-sm-4" th:text="#{patient.field.email}">Email</dt>
+          <dd class="col-sm-8">
+            <span th:text="${patient.email()} ?: '—'">—</span>
+            <span class="badge text-bg-success" th:if="${patient.emailVerified()}" th:text="#{patient.badge.verified}">verified</span>
+            <span class="badge text-bg-warning" th:if="${patient.email() != null and !patient.emailVerified()}" th:text="#{patient.badge.unverified}">unverified</span>
+          </dd>
+          <dt class="col-sm-4" th:text="#{patient.field.address}">Address</dt>
+          <dd class="col-sm-8" th:text="${patient.address()} ?: '—'">—</dd>
+        </dl>
+      </section>
+
+      <section class="mb-4" th:if="${canUpdateContact}">
+        <h2 class="h5" th:text="#{patient.contact.title}">Update contact</h2>
+        <form th:action="@{/patients/{id}/contact(id=${patient.id()})}" method="post" class="row g-2">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="col-md-4">
+            <input class="form-control" name="phone" th:value="${patient.phone()}" th:placeholder="#{patient.field.phone}"/>
+          </div>
+          <div class="col-md-4">
+            <input class="form-control" name="email" th:value="${patient.email()}" th:placeholder="#{patient.field.email}"/>
+          </div>
+          <div class="col-md-4">
+            <input class="form-control" name="address" th:value="${patient.address()}" th:placeholder="#{patient.field.address}"/>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-sm btn-teal" type="submit" th:text="#{patient.contact.save}">Save</button>
+          </div>
+        </form>
+        <div class="mt-3 row g-2">
+          <form class="col-auto" th:action="@{/patients/{id}/otp/send(id=${patient.id()})}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" name="channel" value="SMS"/>
+            <button class="btn btn-sm btn-outline-secondary" type="submit" th:text="#{patient.otp.sendSms}">Send SMS code</button>
+          </form>
+          <form class="col-auto" th:action="@{/patients/{id}/otp/send(id=${patient.id()})}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" name="channel" value="EMAIL"/>
+            <button class="btn btn-sm btn-outline-secondary" type="submit" th:text="#{patient.otp.sendEmail}">Send email code</button>
+          </form>
+          <form class="col-md-6" th:action="@{/patients/{id}/otp/verify(id=${patient.id()})}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="input-group input-group-sm">
+              <select class="form-select" name="channel">
+                <option value="SMS">SMS</option>
+                <option value="EMAIL">Email</option>
+              </select>
+              <input class="form-control" name="code" maxlength="6" th:placeholder="#{patient.otp.code}"/>
+              <button class="btn btn-teal" type="submit" th:text="#{patient.otp.verify}">Verify</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="mb-4" th:if="${isSelf}">
+        <h2 class="h5" th:text="#{patient.change.title}">Request name / DOB change</h2>
+        <p class="small text-muted" th:text="#{patient.change.hint}">Front desk must approve.</p>
+        <form th:action="@{/patients/{id}/demographics/request(id=${patient.id()})}" method="post" class="row g-2">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="col-md-4"><input class="form-control" name="newGivenName" th:placeholder="#{patient.field.givenName}"/></div>
+          <div class="col-md-4"><input class="form-control" name="newFamilyName" th:placeholder="#{patient.field.familyName}"/></div>
+          <div class="col-md-4"><input class="form-control" type="date" name="newDateOfBirth"/></div>
+          <div class="col-12"><input class="form-control" name="reason" th:placeholder="#{patient.change.reason}"/></div>
+          <div class="col-12"><button class="btn btn-sm btn-outline-secondary" type="submit" th:text="#{patient.change.submit}">Submit request</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-lg-5">
+      <section class="mb-4 text-center">
+        <h2 class="h5" th:text="#{patient.card.qr}">QR identity</h2>
+        <img th:src="${qrDataUri}" width="200" height="200" alt="Patient QR"/>
+        <p class="small text-muted mb-0" th:text="#{patient.card.expires}">Short-lived token</p>
+      </section>
+
+      <section class="mb-4" th:if="${canAccessDocuments}">
+        <h2 class="h5" th:text="#{patient.document.title}">ID documents</h2>
+        <ul class="list-unstyled">
+          <li th:each="d : ${documents}">
+            <a th:href="@{/patients/{pid}/documents/{did}(pid=${patient.id()}, did=${d.id})}"
+               th:text="${d.originalFilename} ?: ${d.documentType}">file</a>
+          </li>
+        </ul>
+        <form th:action="@{/patients/{id}/documents(id=${patient.id()})}" method="post" enctype="multipart/form-data" class="row g-2">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="col-md-5">
+            <select class="form-select form-select-sm" name="documentType" required>
+              <option value="NATIONAL_ID" th:text="#{patient.document.nationalId}">National ID</option>
+              <option value="BIRTH_CERTIFICATE" th:text="#{patient.document.birth}">Birth certificate</option>
+              <option value="PASSPORT" th:text="#{patient.document.passport}">Passport</option>
+              <option value="OTHER" th:text="#{patient.document.other}">Other</option>
+            </select>
+          </div>
+          <div class="col-md-5"><input class="form-control form-control-sm" type="file" name="file" required/></div>
+          <div class="col-md-2"><button class="btn btn-sm btn-teal w-100" type="submit" th:text="#{patient.document.upload}">Upload</button></div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <section class="mb-4" th:if="${!#lists.isEmpty(allergies) or isSelf or canConfirmClinical}">
+    <h2 class="h5" th:text="#{patient.allergy.title}">Allergies</h2>
+    <ul class="list-group mb-3">
+      <li class="list-group-item d-flex justify-content-between align-items-center" th:each="a : ${allergies}">
+        <span>
+          <strong th:text="${a.substance}">substance</strong>
+          <span class="badge text-bg-warning ms-2" th:if="${!a.verified}" th:text="#{patient.badge.unverified}">unverified</span>
+          <span class="badge text-bg-success ms-2" th:if="${a.verified}" th:text="#{patient.badge.verified}">verified</span>
+        </span>
+        <form th:if="${canConfirmClinical and !a.verified}"
+              th:action="@{/patients/{pid}/allergies/{aid}/confirm(pid=${patient.id()}, aid=${a.id})}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button class="btn btn-sm btn-outline-success" type="submit" th:text="#{patient.allergy.confirm}">Confirm</button>
+        </form>
+      </li>
+    </ul>
+    <form th:if="${isSelf or canConfirmClinical}" th:action="@{/patients/{id}/allergies(id=${patient.id()})}" method="post" class="row g-2">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="col-md-4"><input class="form-control" name="substance" required th:placeholder="#{patient.allergy.substance}"/></div>
+      <div class="col-md-3"><input class="form-control" name="criticality" th:placeholder="#{patient.allergy.criticality}"/></div>
+      <div class="col-md-3"><input class="form-control" name="note" th:placeholder="#{patient.allergy.note}"/></div>
+      <div class="col-md-2"><button class="btn btn-teal w-100" type="submit" th:text="#{patient.allergy.add}">Add</button></div>
+    </form>
+  </section>
+
+  <section class="mb-4" th:if="${!#lists.isEmpty(history) or isSelf or canConfirmClinical}">
+    <h2 class="h5" th:text="#{patient.history.title}">History</h2>
+    <ul class="list-group mb-3">
+      <li class="list-group-item" th:each="h : ${history}">
+        <div class="d-flex justify-content-between">
+          <div>
+            <span class="badge text-bg-secondary" th:text="${h.category}">CAT</span>
+            <span th:text="${h.description}">desc</span>
+            <span class="badge text-bg-warning ms-2" th:if="${!h.verified}" th:text="#{patient.badge.unverified}">unverified</span>
+          </div>
+          <form th:if="${canConfirmClinical and !h.verified}"
+                th:action="@{/patients/{pid}/history/{hid}/confirm(pid=${patient.id()}, hid=${h.id})}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button class="btn btn-sm btn-outline-success" type="submit" th:text="#{patient.history.confirm}">Confirm</button>
+          </form>
+        </div>
+      </li>
+    </ul>
+    <form th:if="${isSelf or canConfirmClinical}" th:action="@{/patients/{id}/history(id=${patient.id()})}" method="post" class="row g-2">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="col-md-3">
+        <select class="form-select" name="category" required>
+          <option value="CONDITION">CONDITION</option>
+          <option value="SURGERY">SURGERY</option>
+          <option value="MEDICATION">MEDICATION</option>
+          <option value="FAMILY">FAMILY</option>
+          <option value="PREGNANCY">PREGNANCY</option>
+          <option value="OTHER">OTHER</option>
+        </select>
+      </div>
+      <div class="col-md-5"><input class="form-control" name="description" required th:placeholder="#{patient.history.description}"/></div>
+      <div class="col-md-2"><input class="form-control" name="sinceText" th:placeholder="#{patient.history.since}"/></div>
+      <div class="col-md-2"><button class="btn btn-teal w-100" type="submit" th:text="#{patient.history.add}">Add</button></div>
+    </form>
+  </section>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

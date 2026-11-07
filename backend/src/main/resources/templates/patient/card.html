@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('patient.card.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5" style="max-width: 480px;">
+  <div class="card shadow-sm text-center p-4">
+    <h1 class="h4" th:text="#{app.name}">MediFlow</h1>
+    <p class="mb-1" th:text="${patient.fullName()}">Name</p>
+    <p class="fw-semibold mb-3" th:text="${patient.mrn()}">MRN</p>
+    <img th:src="${qrDataUri}" width="220" height="220" alt="Patient QR"/>
+    <p class="small text-muted mt-3 mb-0" th:text="#{patient.card.expires}">Expires soon</p>
+    <button class="btn btn-teal mt-3 d-print-none" onclick="window.print()" th:text="#{patient.card.print}">Print</button>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

@@ -218,7 +218,7 @@ public class AccessPolicy {
     return roles(auth);
   }
 
-  static Set<Role> roles(Authentication auth) {
+  public static Set<Role> roles(Authentication auth) {
     EnumSet<Role> roles = EnumSet.noneOf(Role.class);
     for (GrantedAuthority authority : auth.getAuthorities()) {
       try {

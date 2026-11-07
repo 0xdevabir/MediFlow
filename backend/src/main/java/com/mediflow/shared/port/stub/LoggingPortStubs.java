@@ -14,11 +14,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
-@Configuration
+/**
+ * Fallback port implementations. Registered as an auto-configuration (see {@code
+ * META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}) so it is
+ * evaluated after all component-scanned beans: as soon as a module declares its own
+ * {@code @Component} implementing a port, the stub here backs off.
+ */
+@AutoConfiguration
 public class LoggingPortStubs {
 
   private static final Logger log = LoggerFactory.getLogger(LoggingPortStubs.class);

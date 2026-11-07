@@ -347,6 +347,24 @@ public class DirectoryJdbc {
     return n == null ? 0 : n;
   }
 
+  public void deletePackageItems(UUID packageId) {
+    jdbc.update(
+        "DELETE FROM lab_package_item WHERE package_id = :id",
+        new MapSqlParameterSource("id", packageId));
+  }
+
+  public boolean labTestCodeTaken(String code, UUID excludingId) {
+    MapSqlParameterSource p = new MapSqlParameterSource("code", code);
+    String sql = "SELECT EXISTS (SELECT 1 FROM lab_test WHERE lower(code) = lower(:code)";
+    if (excludingId != null) {
+      sql += " AND id <> :id";
+      p.addValue("id", excludingId);
+    }
+    sql += ")";
+    Boolean b = jdbc.queryForObject(sql, p, Boolean.class);
+    return Boolean.TRUE.equals(b);
+  }
+
   // ---------------------------------------------------------------- mapping helpers
 
   static String like(String q) {

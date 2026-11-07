@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('directory.admin.packages')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5" style="max-width: 720px;">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h4 mb-3" th:text="#{directory.admin.packages}">Package</h1>
+  <form th:action="@{/directory/admin/packages}" method="post" class="border rounded p-3 bg-white">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" name="id" th:if="${pkg != null}" th:value="${pkg.id()}"/>
+    <div class="mb-3">
+      <label class="form-label" for="name" th:text="#{directory.tests.name}">Name</label>
+      <input class="form-control" id="name" name="name" required th:value="${pkg != null ? pkg.name() : ''}"/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="hospitalId" th:text="#{directory.search.hospital}">Hospital</label>
+      <select class="form-select" id="hospitalId" name="hospitalId">
+        <option value="" th:text="#{directory.packages.allHospitals}">All</option>
+        <option th:each="h : ${hospitals}" th:value="${h.id()}" th:text="${h.name()}"
+                th:selected="${pkg != null and pkg.hospitalId() != null and pkg.hospitalId().equals(h.id())}"></option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="price" th:text="#{directory.tests.price}">Price</label>
+      <input class="form-control" type="number" step="0.01" min="0" id="price" name="price"
+             th:value="${pkg != null ? pkg.price() : ''}"/>
+    </div>
+    <fieldset class="mb-3">
+      <legend class="form-label" th:text="#{directory.admin.packageItems}">Tests</legend>
+      <div class="row">
+        <div class="col-md-6" th:each="t : ${directTests}">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="testIds" th:value="${t.id}"
+                   th:id="${'t-' + t.id}"
+                   th:checked="${selectedTestIds.contains(t.id)}"/>
+            <label class="form-check-label" th:for="${'t-' + t.id}"
+                   th:text="${t.name + ' (' + t.code + ')'}"></label>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="active" name="active" value="true"
+             th:checked="${pkg == null or pkg.active()}"/>
+      <label class="form-check-label" for="active" th:text="#{directory.admin.active}">Active</label>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-teal" type="submit" th:text="#{directory.admin.save}">Save</button>
+      <a class="btn btn-outline-secondary" th:href="@{/directory/admin}" th:text="#{directory.admin.cancel}">Cancel</a>
+    </div>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

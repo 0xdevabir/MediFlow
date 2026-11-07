@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('appointment.book.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{appointment.book.title}">Book</h1>
+  <form class="row g-2 mb-4" method="get" th:action="@{/appointments/book}">
+    <div class="col-md-4">
+      <input class="form-control" name="hospitalId" th:value="${hospitalId}" placeholder="Hospital UUID">
+    </div>
+    <div class="col-md-4">
+      <input class="form-control" name="doctorId" th:value="${doctorId}" placeholder="Doctor UUID">
+    </div>
+    <div class="col-md-4">
+      <button class="btn btn-outline-secondary" type="submit" th:text="#{queue.board.load}">Load</button>
+    </div>
+  </form>
+  <p th:text="#{appointment.book.pickSlot}">Pick</p>
+  <form method="post" th:action="@{/appointments/book}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+    <div class="mb-3" th:if="${onBehalf}">
+      <label class="form-label" th:text="#{appointment.book.patientId}">Patient</label>
+      <input class="form-control" name="patientId" th:value="${patientId}" required>
+      <div class="form-check mt-2">
+        <input class="form-check-input" type="checkbox" name="emergency" value="true" id="emergency">
+        <label class="form-check-label" for="emergency" th:text="#{appointment.book.emergency}">Emergency</label>
+      </div>
+      <input class="form-control mt-2" name="emergencyNote" th:placeholder="#{appointment.book.emergencyNote}">
+    </div>
+    <div class="list-group mb-3">
+      <label class="list-group-item" th:each="s : ${slots}">
+        <input class="form-check-input me-2" type="radio" name="slotId" th:value="${s.slotId()}" required>
+        <strong th:text="${s.doctorName()}">Doctor</strong>
+        — <span th:text="${s.hospitalName()}">Hospital</span>
+        / <span th:text="${s.departmentName()}">Dept</span>
+        <br>
+        <span th:text="${s.startsAt()}">start</span>
+        → <span th:text="${s.endsAt()}">end</span>
+        (<span th:text="${s.remaining()}">0</span> left)
+      </label>
+    </div>
+    <button class="btn btn-primary" type="submit" th:text="#{appointment.book.submit}">Book</button>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

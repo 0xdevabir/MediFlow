@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('er.detail.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{er.detail.title}">Red Alert</h1>
+  <dl class="row">
+    <dt class="col-sm-3">Patient</dt>
+    <dd class="col-sm-9" th:if="${patient != null}"
+        th:text="${patient.givenName + ' ' + patient.familyName + ' · MRN ' + patient.mrn}">Name</dd>
+    <dt class="col-sm-3">Level</dt><dd class="col-sm-9" th:text="${alert.level}">CRITICAL</dd>
+    <dt class="col-sm-3">Raised</dt><dd class="col-sm-9" th:text="${alert.raisedAt}">t</dd>
+    <dt class="col-sm-3">Reason</dt><dd class="col-sm-9" th:text="${alert.reason}">r</dd>
+    <dt class="col-sm-3">Acknowledged</dt><dd class="col-sm-9" th:text="${alert.acknowledgedAt}">—</dd>
+    <dt class="col-sm-3">Handover</dt><dd class="col-sm-9" th:text="${alert.handoverStatus}">—</dd>
+  </dl>
+  <div class="d-flex gap-2 flex-wrap" sec:authorize="hasRole('ER')" th:if="${alert.handoverStatus == null}">
+    <form method="post" th:action="@{/er/{id}/acknowledge(id=${alert.id})}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <button class="btn btn-outline-primary" type="submit" th:text="#{er.detail.acknowledge}">Ack</button>
+    </form>
+    <form class="d-flex gap-2" method="post" th:action="@{/er/{id}/handover(id=${alert.id})}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <select class="form-select" name="status" required>
+        <option value="ADMITTED" th:text="#{er.detail.admitted}">Admitted</option>
+        <option value="REFERRED" th:text="#{er.detail.referred}">Referred</option>
+        <option value="DISCHARGED" th:text="#{er.detail.discharged}">Discharged</option>
+      </select>
+      <input class="form-control" name="note" th:placeholder="#{er.detail.note}">
+      <button class="btn btn-danger" type="submit" th:text="#{er.detail.handover}">Handover</button>
+    </form>
+  </div>
+  <a class="btn btn-link" th:href="@{/er}">← Board</a>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

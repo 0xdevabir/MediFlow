@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('queue.patient.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{queue.patient.title}">Your status</h1>
+  <div th:if="${status == null}" class="text-muted" th:text="#{queue.patient.none}">None</div>
+  <div th:if="${status != null}" id="queue-status"
+       th:attr="data-appointment-id=${status.appointmentId()}">
+    <p>
+      <span th:text="#{queue.patient.token}">Token</span>:
+      <strong id="tokenNo" th:text="${status.tokenNo()}">T001</strong>
+    </p>
+    <p id="aheadLine"
+       th:text="#{queue.patient.ahead(${status.ahead()})}">0 ahead</p>
+    <p class="text-muted small" th:text="#{queue.patient.polling}">polling</p>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+<script th:if="${status != null}" th:src="@{/js/appointment-queue.js}"
+        th:attr="data-appointment-id=${status.appointmentId()}, data-mode=patient"></script>
+</body>
+</html>

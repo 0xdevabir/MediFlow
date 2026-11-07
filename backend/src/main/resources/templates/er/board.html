@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('er.board.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{er.board.title}">ER</h1>
+  <div th:if="${alerts == null or alerts.isEmpty()}" class="text-muted" th:text="#{er.board.empty}">Empty</div>
+  <div class="list-group" th:if="${alerts != null}">
+    <a class="list-group-item list-group-item-action list-group-item-danger"
+       th:each="a : ${alerts}"
+       th:href="@{/er/{id}(id=${a.id})}">
+      <div class="d-flex justify-content-between">
+        <strong th:with="p=${patients.get(a.patientId)}"
+                th:text="${p != null ? (p.givenName + ' ' + p.familyName + ' (' + p.mrn + ')') : a.patientId}">Patient</strong>
+        <span th:text="${a.raisedAt}">time</span>
+      </div>
+      <small th:text="${a.reason}">reason</small>
+    </a>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('appointment.checkin.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{appointment.checkin.title}">Check-in</h1>
+
+  <section class="mb-4">
+    <h2 class="h5" th:text="#{appointment.checkin.byCode}">By code</h2>
+    <form class="row g-2" method="post" th:action="@{/appointments/check-in/code}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <div class="col-md-6">
+        <input class="form-control" name="code" required th:placeholder="#{appointment.checkin.code}">
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary" type="submit" th:text="#{appointment.checkin.submit}">Check in</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="mb-4">
+    <h2 class="h5" th:text="#{appointment.checkin.byIds}">By identifiers</h2>
+    <form class="row g-2" method="post" th:action="@{/appointments/check-in/identifiers}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <div class="col-md-4">
+        <input class="form-control" name="appointmentId" required th:placeholder="#{appointment.checkin.appointmentId}">
+      </div>
+      <div class="col-md-3">
+        <input class="form-control" name="identifierA" required th:placeholder="#{appointment.checkin.idA}">
+      </div>
+      <div class="col-md-3">
+        <input class="form-control" name="identifierB" required th:placeholder="#{appointment.checkin.idB}">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary" type="submit" th:text="#{appointment.checkin.submit}">Check in</button>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    <h2 class="h5" th:text="#{appointment.checkin.lookup}">Lookup</h2>
+    <form class="row g-2 mb-3" method="get" th:action="@{/appointments/patient-lookup}">
+      <div class="col-md-4">
+        <input class="form-control" name="mrn" th:value="${mrn}" th:placeholder="#{appointment.checkin.mrn}" required>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-outline-secondary" type="submit">Go</button>
+      </div>
+    </form>
+    <div th:if="${patient != null}" class="mb-2"
+         th:text="${patient.givenName + ' ' + patient.familyName + ' · ' + patient.mrn}">Patient</div>
+    <ul th:if="${appointments != null}">
+      <li th:each="a : ${appointments}">
+        <a th:href="@{/appointments/{id}(id=${a.id})}"
+           th:text="${a.id + ' · ' + a.status + ' · ' + a.bookedAt}">appt</a>
+      </li>
+    </ul>
+  </section>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

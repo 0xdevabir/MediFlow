@@ -3,6 +3,8 @@ package com.mediflow.shared.event;
 import com.mediflow.shared.domain.TriageLevel;
 import com.mediflow.shared.domain.VitalClass;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /** Cross-module domain events. Owners publish; listeners use {@code @TransactionalEventListener}. */
@@ -18,6 +20,33 @@ public final class DomainEvents {
 
   public record AppointmentCheckedIn(UUID appointmentId, UUID patientId, Instant at) {}
 
+  /** Patient is called next in the OPD queue (T04 → T10 QUEUE_NEXT). */
+  public record QueueCalled(UUID appointmentId, UUID patientId, String tokenNo, Instant at) {}
+
+  /**
+   * Appointment moved to a new start time (T04 reschedule → T10 SCHEDULE_CHANGED + reminder
+   * replan).
+   */
+  public record ScheduleChanged(
+      UUID appointmentId, UUID patientId, Instant newStart, Instant at) {}
+
+  /**
+   * Doctor schedule / role change that affects already-booked slots (T03 → T10 notify booked
+   * patients).
+   */
+  public record PractitionerScheduleChanged(
+      UUID practitionerRoleId,
+      UUID practitionerId,
+      UUID hospitalId,
+      List<UUID> affectedBookedSlotIds,
+      Instant at) {
+
+    public PractitionerScheduleChanged {
+      affectedBookedSlotIds =
+          affectedBookedSlotIds == null ? List.of() : List.copyOf(affectedBookedSlotIds);
+    }
+  }
+
   public record TriageLevelSet(UUID appointmentId, UUID patientId, TriageLevel level, Instant at) {}
 
   public record VitalsClassified(
@@ -25,6 +54,15 @@ public final class DomainEvents {
 
   public record RedAlertRaised(
       UUID redAlertId, UUID patientId, UUID hospitalId, TriageLevel level, Instant at) {}
+
+  /** Consultation requested a lab order before the lab module creates the row (T05 → T07). */
+  public record LabOrderRequested(
+      UUID encounterId,
+      UUID patientId,
+      UUID hospitalId,
+      String testCode,
+      UUID requestedBy,
+      Instant at) {}
 
   public record LabOrderCreated(
       UUID labOrderId, UUID patientId, UUID hospitalId, String orderType, Instant at) {}
@@ -45,6 +83,10 @@ public final class DomainEvents {
 
   public record MedicationDispensed(
       UUID dispenseId, UUID prescriptionId, UUID patientId, Instant at) {}
+
+  /** Follow-up date set on a consultation / prescription (T05/T06 → T10 reminders). */
+  public record FollowUpScheduled(
+      UUID sourceId, UUID patientId, LocalDate date, Instant at) {}
 
   public record AiJobCompleted(UUID jobId, UUID encounterId, String status, Instant at) {}
 

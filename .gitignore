@@ -1,0 +1,11 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# OS / build / local
+.DS_Store
+docs/plan/logs/
+target/
+.venv/
+__pycache__/
+.env
+*.log

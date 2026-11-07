@@ -23,6 +23,8 @@
     <aws.sdk.version>2.29.45</aws.sdk.version>
     <totp.version>1.7.1</totp.version>
     <zxing.version>3.5.3</zxing.version>
+    <!-- 1.21.4+ negotiates a Docker API version accepted by Docker Engine 29+ -->
+    <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
 
   <dependencies>
@@ -183,6 +185,19 @@
             </exclude>
           </excludes>
         </configuration>
+      </plugin>
+      <!-- Runs *IT.java (Testcontainers) during `verify` -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

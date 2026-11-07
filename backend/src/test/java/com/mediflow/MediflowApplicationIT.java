@@ -3,41 +3,24 @@ package com.mediflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.mediflow.support.AbstractIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Testcontainers
-class MediflowApplicationIT {
-
-  @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:16-alpine")
-          .withDatabaseName("mediflow")
-          .withUsername("mediflow")
-          .withPassword("mediflow");
-
-  @DynamicPropertySource
-  static void datasourceProps(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-    registry.add("spring.datasource.username", POSTGRES::getUsername);
-    registry.add("spring.datasource.password", POSTGRES::getPassword);
-  }
+class MediflowApplicationIT extends AbstractIntegrationTest {
 
   @Autowired JdbcTemplate jdbc;
 
   @Test
   void contextLoadsAndFlywayMigrated() {
+    Integer applied =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '1' AND success",
+            Integer.class);
+    assertThat(applied).isEqualTo(1);
+
     Integer tables =
         jdbc.queryForObject(
             """
@@ -50,14 +33,7 @@ class MediflowApplicationIT {
 
   @Test
   void auditEventUpdateIsRejected() {
-    UUID id = UUID.randomUUID();
-    jdbc.update(
-        """
-        INSERT INTO audit_event (id, occurred_at, action, hash, created_at)
-        VALUES (?, now(), 'TEST', 'abc', now())
-        """,
-        id);
-
+    UUID id = insertAuditEvent("TEST_UPD");
     assertThatThrownBy(
             () -> jdbc.update("UPDATE audit_event SET action = 'TAMPER' WHERE id = ?", id))
         .hasMessageContaining("append-only");
@@ -65,15 +41,24 @@ class MediflowApplicationIT {
 
   @Test
   void auditEventDeleteIsRejected() {
-    UUID id = UUID.randomUUID();
-    jdbc.update(
-        """
-        INSERT INTO audit_event (id, occurred_at, action, hash, created_at)
-        VALUES (?, now(), 'TEST_DEL', 'def', now())
-        """,
-        id);
-
+    UUID id = insertAuditEvent("TEST_DEL");
     assertThatThrownBy(() -> jdbc.update("DELETE FROM audit_event WHERE id = ?", id))
         .hasMessageContaining("append-only");
+  }
+
+  @Test
+  void auditEventTruncateIsRejected() {
+    insertAuditEvent("TEST_TRUNC");
+    assertThatThrownBy(() -> jdbc.execute("TRUNCATE audit_event"))
+        .hasMessageContaining("append-only");
+  }
+
+  private UUID insertAuditEvent(String action) {
+    UUID id = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO audit_event (id, occurred_at, action, hash, created_at) VALUES (?, now(), ?, 'h', now())",
+        id,
+        action);
+    return id;
   }
 }

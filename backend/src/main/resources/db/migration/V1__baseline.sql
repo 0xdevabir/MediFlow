@@ -587,11 +587,15 @@ CREATE TRIGGER trg_audit_event_no_delete
     BEFORE DELETE ON audit_event
     FOR EACH ROW EXECUTE FUNCTION forbid_audit_event_mutation();
 
+CREATE TRIGGER trg_audit_event_no_truncate
+    BEFORE TRUNCATE ON audit_event
+    FOR EACH STATEMENT EXECUTE FUNCTION forbid_audit_event_mutation();
+
 -- Prefer least-privilege: if role mediflow exists, revoke mutations (dev may use owner).
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mediflow') THEN
-        REVOKE UPDATE, DELETE ON audit_event FROM mediflow;
+        REVOKE UPDATE, DELETE, TRUNCATE ON audit_event FROM mediflow;
     END IF;
 END $$;
 

@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * drug_dose_limit tables (seeded by T08) into an in-memory snapshot refreshed every 60 s.
  */
 @Component
+@ConditionalOnMissingBean(RxDrugDictionary.class)
 public class RepositoryRxDrugDictionary implements RxDrugDictionary {
 
   private static final Duration TTL = Duration.ofSeconds(60);

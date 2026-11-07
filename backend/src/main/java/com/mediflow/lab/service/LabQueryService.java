@@ -1,9 +1,111 @@
-LabQueryService.java 236L cognitive
-// /Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/T07-lab/backend/src/main/java/com/mediflow/lab/service/LabQueryService.java
-§ function function (L1-L48)
-LabQueryService.java 366L cognitive
-// /Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/T07-lab/backend/src/main/java/com/mediflow/lab/service/LabQueryService.java
-§ function function (L110-L154)
+package com.mediflow.lab.service;
+
+import com.mediflow.lab.domain.LabCriticalTask;
+import com.mediflow.lab.domain.LabOrderDetail;
+import com.mediflow.lab.domain.LabReferenceRange;
+import com.mediflow.lab.domain.LabResultValue;
+import com.mediflow.lab.repo.LabCatalogQueries;
+import com.mediflow.lab.repo.LabCriticalTaskRepository;
+import com.mediflow.lab.repo.LabOrderDetailRepository;
+import com.mediflow.lab.repo.LabOrderQueries;
+import com.mediflow.lab.repo.LabPackageQueries;
+import com.mediflow.lab.repo.LabPatientQueries;
+import com.mediflow.lab.repo.LabReferenceRangeRepository;
+import com.mediflow.lab.repo.LabReportQueries;
+import com.mediflow.lab.repo.LabResultValueRepository;
+import com.mediflow.lab.repo.LabSampleQueries;
+import com.mediflow.lab.repo.LabStaffQueries;
+import com.mediflow.shared.domain.DiagnosticReport;
+import com.mediflow.shared.domain.LabOrder;
+import com.mediflow.shared.domain.LabOrderStatus;
+import com.mediflow.shared.domain.LabPackage;
+import com.mediflow.shared.domain.LabPackageItem;
+import com.mediflow.shared.domain.LabTest;
+import com.mediflow.shared.domain.Patient;
+import com.mediflow.shared.domain.Sample;
+import com.mediflow.shared.port.ObjectStoragePort;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Assembles read models for patient reports and the lab-tech queue. */
+@Service
+public class LabQueryService {
+
+  private static final Set<LabOrderStatus> TECH_QUEUE =
+      EnumSet.of(
+          LabOrderStatus.ORDERED,
+          LabOrderStatus.SAMPLE_COLLECTED,
+          LabOrderStatus.IN_LAB,
+          LabOrderStatus.RESULTED);
+
+  private final LabOrderQueries orders;
+  private final LabOrderDetailRepository details;
+  private final LabReportQueries reports;
+  private final LabResultValueRepository resultValues;
+  private final LabReferenceRangeRepository ranges;
+  private final LabSampleQueries samples;
+  private final LabCatalogQueries tests;
+  private final LabPackageQueries packages;
+  private final LabPatientQueries patients;
+  private final LabCriticalTaskRepository criticalTasks;
+  private final LabStaffQueries staff;
+  private final LabAccess access;
+  private final ObjectStoragePort storage;
+
+  public LabQueryService(
+      LabOrderQueries orders,
+      LabOrderDetailRepository details,
+      LabReportQueries reports,
+      LabResultValueRepository resultValues,
+      LabReferenceRangeRepository ranges,
+      LabSampleQueries samples,
+      LabCatalogQueries tests,
+      LabPackageQueries packages,
+      LabPatientQueries patients,
+      LabCriticalTaskRepository criticalTasks,
+      LabStaffQueries staff,
+      LabAccess access,
+      ObjectStoragePort storage) {
+    this.orders = orders;
+    this.details = details;
+    this.reports = reports;
+    this.resultValues = resultValues;
+    this.ranges = ranges;
+    this.samples = samples;
+    this.tests = tests;
+    this.packages = packages;
+    this.patients = patients;
+    this.criticalTasks = criticalTasks;
+    this.staff = staff;
+    this.access = access;
+    this.storage = storage;
+  }
+
+  @PreAuthorize("hasRole('PATIENT')")
+  @Transactional(readOnly = true)
+  public List<LabViews.OrderRow> myOrders() {
+    UUID patientId = access.requireCurrentPatientId();
+    return toRows(orders.findByPatientIdOrderByOrderedAtDesc(patientId), false);
+  }
+
+  /**
+   * Patient report view: values and PDF only after verification (safety invariant). Staff/doctor may
+   * see draft values when they can view the order.
+   */
   @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','LAB_TECH','FRONT_DESK','ADMIN')")
   @Transactional(readOnly = true)
   public LabViews.ReportView report(UUID labOrderId) {
@@ -17,11 +119,12 @@ LabQueryService.java 366L cognitive
     LabViews.OrderRow row = toRows(List.of(order), true).get(0);
     Optional<DiagnosticReport> report = reports.findByLabOrderId(labOrderId);
     boolean released = order.getStatus() == LabOrderStatus.VERIFIED && report.isPresent();
-    boolean patientViewer = access.currentPatient().map(p -> p.getId().equals(order.getPatientId())).orElse(false)
-        && !access.isLabTech()
-        && !access.isDoctor()
-        && !access.isFrontDesk()
-        && !access.isAdmin();
+    boolean patientViewer =
+        access.currentPatient().map(p -> p.getId().equals(order.getPatientId())).orElse(false)
+            && !access.isLabTech()
+            && !access.isDoctor()
+            && !access.isFrontDesk()
+            && !access.isAdmin();
 
     if (patientViewer && !released) {
       return new LabViews.ReportView(row, false, false, false, null, false, null, List.of());
@@ -49,8 +152,9 @@ LabQueryService.java 366L cognitive
         r.getVerifiedAt(),
         values);
   }
-// ... 4 lines omitted
-§ function function (L53-L75)
+
+  @PreAuthorize("hasAnyRole('LAB_TECH','ADMIN')")
+  @Transactional(readOnly = true)
   public List<LabViews.OrderRow> techQueue(LabOrderStatus statusFilter) {
     UUID me = access.requireUserId();
     List<UUID> hospitals = staff.hospitalIdsOf(me);
@@ -66,7 +170,6 @@ LabQueryService.java 366L cognitive
       }
     }
     List<LabViews.OrderRow> rows = toRows(list, true);
-    // Lab tech only sees unassigned orders or ones assigned to them.
     if (access.isAdmin()) {
       return rows;
     }
@@ -74,8 +177,9 @@ LabQueryService.java 366L cognitive
         .filter(r -> r.assignedTechId() == null || me.equals(r.assignedTechId()))
         .toList();
   }
-// ... 4 lines omitted
-§ function function (L80-L115)
+
+  @PreAuthorize("hasAnyRole('LAB_TECH','ADMIN')")
+  @Transactional(readOnly = true)
   public LabViews.TechOrderView techOrder(UUID labOrderId) {
     LabOrder order =
         orders.findById(labOrderId).orElseThrow(() -> new LabRuleException("lab.error.orderNotFound"));
@@ -112,8 +216,23 @@ LabQueryService.java 366L cognitive
         canUpload,
         canVerify);
   }
-// ... 4 lines omitted
-§ function function (L120-L142)
+
+  /** QR token for printing — lab tech / front desk only. */
+  @PreAuthorize("hasAnyRole('LAB_TECH','FRONT_DESK','ADMIN')")
+  @Transactional(readOnly = true)
+  public String qrToken(UUID labOrderId) {
+    LabOrder order =
+        orders.findById(labOrderId).orElseThrow(() -> new LabRuleException("lab.error.orderNotFound"));
+    LabOrderDetail detail =
+        details
+            .findByLabOrderId(labOrderId)
+            .orElseThrow(() -> new LabRuleException("lab.error.orderNotFound"));
+    access.requireCanViewOrder(order, detail);
+    return detail.getQrToken();
+  }
+
+  @PreAuthorize("hasAnyRole('LAB_TECH','ADMIN')")
+  @Transactional(readOnly = true)
   public List<LabViews.CriticalTaskRow> openCriticalTasks() {
     UUID me = access.requireUserId();
     List<LabCriticalTask> tasks =
@@ -137,8 +256,13 @@ LabQueryService.java 366L cognitive
     }
     return out;
   }
-// ... 2 lines omitted
-§ function function (L145-L205)
+
+  @PreAuthorize("hasRole('DOCTOR')")
+  @Transactional(readOnly = true)
+  public List<LabViews.OrderRow> ordersForEncounter(UUID encounterId) {
+    return toRows(orders.findByEncounterIdOrderByOrderedAtAsc(encounterId), true);
+  }
+
   private List<LabViews.OrderRow> toRows(List<LabOrder> list, boolean includePatient) {
     if (list.isEmpty()) {
       return List.of();
@@ -166,8 +290,7 @@ LabQueryService.java 366L cognitive
     Map<UUID, Patient> patientById = new HashMap<>();
     if (includePatient) {
       for (LabOrder o : list) {
-        patientById.computeIfAbsent(
-            o.getPatientId(), id -> patients.findById(id).orElse(null));
+        patientById.computeIfAbsent(o.getPatientId(), id -> patients.findById(id).orElse(null));
       }
     }
     List<LabViews.OrderRow> out = new ArrayList<>(list.size());
@@ -176,8 +299,7 @@ LabQueryService.java 366L cognitive
       DiagnosticReport r = reportByOrder.get(o.getId());
       String name = itemName(o, testById, pkgById);
       Patient p = patientById.get(o.getPatientId());
-      String patientName =
-          p == null ? null : (p.getGivenName() + " " + p.getFamilyName()).trim();
+      String patientName = p == null ? null : (p.getGivenName() + " " + p.getFamilyName()).trim();
       String mrn = p == null ? null : p.getMrn();
       boolean released = o.getStatus() == LabOrderStatus.VERIFIED && r != null;
       out.add(
@@ -202,8 +324,20 @@ LabQueryService.java 366L cognitive
     }
     return out;
   }
-// ... 2 lines omitted
-§ function function (L208-L219)
+
+  private static String itemName(
+      LabOrder o, Map<UUID, LabTest> tests, Map<UUID, LabPackage> pkgs) {
+    if (o.getTestId() != null) {
+      LabTest t = tests.get(o.getTestId());
+      return t == null ? o.getTestId().toString() : t.getName();
+    }
+    if (o.getPackageId() != null) {
+      LabPackage p = pkgs.get(o.getPackageId());
+      return p == null ? o.getPackageId().toString() : p.getName();
+    }
+    return "Lab order";
+  }
+
   private List<UUID> testIdsOf(LabOrder order) {
     List<UUID> ids = new ArrayList<>();
     if (order.getTestId() != null) {
@@ -216,8 +350,7 @@ LabQueryService.java 366L cognitive
     }
     return ids;
   }
-// ... 2 lines omitted
-§ function function (L222-L234)
+
   private List<LabReferenceRange> dedupeAnalytes(List<LabReferenceRange> all, LabOrder order) {
     Patient patient = patients.findById(order.getPatientId()).orElse(null);
     String sex = patient == null ? null : patient.getSex();
@@ -231,5 +364,4 @@ LabQueryService.java 366L cognitive
     }
     return new ArrayList<>(picked.values());
   }
-7/17 chunks shown (2326 tokens)
-[lean-ctx] full source: read "/Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/T07-lab/backend/src/main/java/com/mediflow/lab/service/LabQueryService.java" directly (no MCP)  ·  or ctx_read("/Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/T07-lab/backend/src/main/java/com/mediflow/lab/service/LabQueryService.java", mode="full")
+}

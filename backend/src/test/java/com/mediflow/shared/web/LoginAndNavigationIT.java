@@ -27,6 +27,16 @@ import org.springframework.test.web.servlet.MockMvc;
 class LoginAndNavigationIT extends AbstractIntegrationTest {
 
   @Autowired MockMvc mvc;
+  @Autowired CurrentUser currentUser;
+
+  @Test
+  @org.springframework.security.test.context.support.WithMockUser(username = "doctor", roles = "DOCTOR")
+  void currentUserResolvesSeededAppUserId() {
+    assertThat(currentUser.username()).contains("doctor");
+    assertThat(currentUser.userId()).isPresent();
+    assertThat(currentUser.hasRole("DOCTOR")).isTrue();
+    assertThat(currentUser.hasRole("ADMIN")).isFalse();
+  }
 
   @Test
   void anonymousIsRedirectedToLogin() throws Exception {

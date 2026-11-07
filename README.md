@@ -46,7 +46,10 @@ cd backend
 ./mvnw verify
 ```
 
-Requires Docker for Testcontainers (PostgreSQL).
+Requires Docker for Testcontainers (PostgreSQL 16). Unit tests are `*Test` (surefire);
+Spring/Testcontainers integration tests are `*IT` (failsafe, run by `verify`) and should extend
+`com.mediflow.support.AbstractIntegrationTest` (one shared Postgres container, `test` profile with
+Redis/Session/RabbitMQ/mail auto-config disabled).
 
 ## Layout
 

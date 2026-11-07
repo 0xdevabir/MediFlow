@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('appointment.reschedule.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{appointment.reschedule.title}">Reschedule</h1>
+  <form method="post" th:action="@{/appointments/{id}/reschedule(id=${appointment.id})}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+    <div class="list-group mb-3">
+      <label class="list-group-item" th:each="s : ${slots}">
+        <input class="form-check-input me-2" type="radio" name="slotId" th:value="${s.slotId()}" required>
+        <span th:text="${s.startsAt() + ' → ' + s.endsAt() + ' (' + s.remaining() + ' left)'}">slot</span>
+      </label>
+    </div>
+    <button class="btn btn-primary" type="submit" th:text="#{appointment.reschedule.title}">Reschedule</button>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

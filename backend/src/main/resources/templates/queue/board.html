@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('queue.board.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{queue.board.title}">Queue</h1>
+  <form class="row g-2 mb-3" method="get" th:action="@{/queue/home}">
+    <div class="col-md-5">
+      <input class="form-control" name="doctorId" th:value="${doctorId}" th:placeholder="#{queue.board.doctorId}" required>
+    </div>
+    <div class="col-md-3">
+      <input class="form-control" type="date" name="date" th:value="${queueDate}">
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-secondary" type="submit" th:text="#{queue.board.load}">Load</button>
+    </div>
+  </form>
+
+  <div th:if="${board == null or board.isEmpty()}" class="text-muted" th:text="#{queue.board.empty}">Empty</div>
+  <table class="table table-sm align-middle" th:if="${board != null and !board.isEmpty()}">
+    <thead>
+      <tr>
+        <th th:text="#{queue.board.token}">Token</th>
+        <th th:text="#{queue.board.patient}">Patient</th>
+        <th th:text="#{queue.board.level}">Level</th>
+        <th th:text="#{queue.board.vitals}">Vitals</th>
+        <th th:text="#{queue.board.ahead}">Ahead</th>
+        <th sec:authorize="hasRole('NURSE')" th:text="#{queue.board.actions}">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="r : ${board}" th:classappend="${r.emergencyFlag()} ? 'table-warning'">
+        <td th:text="${r.tokenNo()}">T001</td>
+        <td th:text="${r.patientLabel()}">Name</td>
+        <td th:text="${r.level()}">NORMAL</td>
+        <td th:text="${r.vitals()}">—</td>
+        <td th:text="${r.ahead()}">0</td>
+        <td sec:authorize="hasRole('NURSE')">
+          <form class="d-inline-flex gap-1 flex-wrap" method="post"
+                th:action="@{/queue/{id}/move-up(id=${r.queueEntryId()})}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="doctorId" th:value="${doctorId}">
+            <input type="hidden" name="date" th:value="${queueDate}">
+            <input class="form-control form-control-sm" style="width:10rem" name="reason" required
+                   th:placeholder="#{queue.board.reason}">
+            <button class="btn btn-sm btn-outline-primary" type="submit" th:text="#{queue.board.moveUp}">Up</button>
+          </form>
+          <form class="mt-1 d-inline-flex gap-1 flex-wrap" method="post" th:action="@{/queue/triage}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="appointmentId" th:value="${r.appointmentId()}">
+            <input type="hidden" name="doctorId" th:value="${doctorId}">
+            <input type="hidden" name="date" th:value="${queueDate}">
+            <select class="form-select form-select-sm" name="level" style="width:8rem">
+              <option th:each="l : ${levels}" th:value="${l}" th:text="${l}">NORMAL</option>
+            </select>
+            <select class="form-select form-select-sm" name="symptomSeverity" style="width:9rem">
+              <option value="">—</option>
+              <option value="MILD">MILD</option>
+              <option value="MODERATE">MODERATE</option>
+              <option value="SEVERE">SEVERE</option>
+              <option value="LIFE_THREATENING">LIFE_THREATENING</option>
+            </select>
+            <button class="btn btn-sm btn-warning" type="submit" th:text="#{queue.board.triage}">Triage</button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+<script th:if="${doctorId != null}" th:src="@{/js/appointment-queue.js}"
+        th:attr="data-doctor-id=${doctorId}, data-queue-date=${queueDate}, data-mode=board"></script>
+</body>
+</html>

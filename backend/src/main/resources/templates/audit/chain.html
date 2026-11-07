@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('audit.chain.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0" th:text="#{audit.chain.title}">Chain</h1>
+    <form th:action="@{/admin/audit/chain/verify}" method="post">
+      <button class="btn btn-primary" type="submit" th:text="#{audit.chain.verify}">Verify</button>
+    </form>
+  </div>
+  <div th:if="${lastCheck == null}" class="text-muted" th:text="#{audit.chain.none}">None</div>
+  <div th:if="${lastCheck != null}" class="alert"
+       th:classappend="${lastCheck.ok} ? 'alert-success' : 'alert-danger'">
+    <span th:text="${lastCheck.ok} ? #{audit.chain.ok} : #{audit.chain.broken}">OK</span>
+    — <span th:text="${lastCheck.message}">msg</span>
+    <div class="small mt-1" th:text="${lastCheck.checkedAt}">at</div>
+  </div>
+  <h2 class="h5 mt-4" th:text="#{audit.chain.history}">History</h2>
+  <ul class="list-group">
+    <li class="list-group-item" th:each="c : ${recent}">
+      <span th:text="${c.checkedAt}">t</span> —
+      <span th:text="${c.message}">m</span>
+    </li>
+  </ul>
+  <p class="mt-3"><a th:href="@{/admin/audit}" th:text="#{audit.admin.title}">Back</a></p>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('admin.dashboard.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-2" th:text="#{admin.dashboard.title}">Administration</h1>
+  <p class="text-muted" th:text="#{admin.dashboard.intro}">Intro</p>
+  <p th:if="${isAdmin and lastCheck != null}" class="small">
+    <span th:text="#{audit.chain.last}">Last check</span>:
+    <span th:text="${lastCheck.message}">OK</span>
+  </p>
+  <p th:if="${isAdmin and openAnomalies != null and openAnomalies > 0}" class="text-warning"
+     th:text="#{audit.admin.openAnomalies(${openAnomalies})}">alerts</p>
+  <div class="list-group">
+    <a class="list-group-item list-group-item-action" th:href="@{/directory}"
+       th:text="#{admin.dashboard.directory}">Directory</a>
+    <a class="list-group-item list-group-item-action" th:href="@{/identity/break-glass/review}"
+       th:text="#{admin.dashboard.users}">Users / break-glass</a>
+    <a class="list-group-item list-group-item-action" th:if="${isAdmin}" th:href="@{/admin/audit}"
+       th:text="#{admin.dashboard.audit}">Audit</a>
+    <a class="list-group-item list-group-item-action" th:href="@{/admin/settings}"
+       th:text="#{admin.dashboard.settings}">Settings</a>
+    <a class="list-group-item list-group-item-action" th:if="${isAdmin}" th:href="@{/admin/analytics}"
+       th:text="#{admin.dashboard.analytics}">Analytics</a>
+    <a class="list-group-item list-group-item-action" th:if="${isAdmin}" th:href="@{/admin/dhis2}"
+       th:text="#{admin.dashboard.dhis2}">DHIS2</a>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

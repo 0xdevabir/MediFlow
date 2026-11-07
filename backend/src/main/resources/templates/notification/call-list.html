@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('notification.callList.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{notification.callList.title}">Staff call list</h1>
+  <ul th:replace="~{notification/fragments :: subnav('callList')}"></ul>
+  <p class="text-muted" th:text="#{notification.callList.hint}">Please phone the person.</p>
+  <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{notification.callList.empty}">Nothing to call.</p>
+  <div class="table-responsive" th:unless="${rows.isEmpty()}">
+    <table class="table table-sm align-middle bg-white">
+      <thead>
+      <tr>
+        <th th:text="#{notification.callList.patient}">Patient</th>
+        <th th:text="#{notification.callList.phone}">Phone</th>
+        <th th:text="#{notification.callList.event}">Event</th>
+        <th th:text="#{notification.callList.reason}">Reason</th>
+        <th th:text="#{notification.callList.message}">Message</th>
+        <th th:text="#{notification.callList.since}">Since</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="row : ${rows}" th:classappend="${row.entry.priority.name() == 'HIGH'} ? 'table-danger'">
+        <td>
+          <span th:if="${row.entry.priority.name() == 'HIGH'}" class="badge bg-danger me-1" th:text="#{notification.priority.HIGH}">Urgent</span>
+          <span th:text="${row.patientName}">Name</span>
+        </td>
+        <td><a th:if="${row.phone != null}" th:href="'tel:' + ${row.phone}" th:text="${row.phone}">01700000000</a></td>
+        <td class="small" th:text="${row.entry.eventType}">RED_ALERT</td>
+        <td class="small" th:text="${row.entry.reason}">Reason</td>
+        <td class="small" style="white-space: pre-line" th:text="${row.entry.message}">Message</td>
+        <td class="small text-muted" th:text="${@templateRenderer.formatInstant(row.entry.createdAt, #locale)}">7 Nov</td>
+        <td class="text-end">
+          <form th:action="@{/notifications/call-list/{id}/resolve(id=${row.entry.id})}" method="post">
+            <button class="btn btn-sm btn-outline-success" type="submit" th:text="#{notification.callList.resolve}">Resolved</button>
+          </form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

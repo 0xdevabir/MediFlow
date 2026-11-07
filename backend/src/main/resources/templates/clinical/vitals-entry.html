@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('clinical.vitals.entry.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{clinical.vitals.entry.title}">Record vitals</h1>
+
+  <div th:if="${parseErrorKey}" class="alert alert-danger" role="alert">
+    <span th:text="${parseErrorVital}"></span>:
+    <span th:text="#{__${parseErrorKey}__(${parseErrorArgs})}">error</span>
+  </div>
+
+  <div th:if="${result != null}" class="alert mb-3"
+       th:classappend="${colours['_patient'] == 'vital-critical'} ? 'alert-danger' : (${colours['_patient'] == 'vital-borderline'} ? 'alert-warning' : 'alert-success')">
+    <strong th:text="#{clinical.vitals.patientLevel}">Patient level</strong>:
+    <span th:text="${result.patientLevel()}">NORMAL</span>
+    <span th:if="${result.pulsePressure() != null}" class="ms-3">
+      <span th:text="#{clinical.vitals.pulsePressure}">Pulse pressure</span>:
+      <span th:text="${result.pulsePressure()}"></span>
+    </span>
+  </div>
+
+  <form th:action="@{/clinical/vitals/entry/{id}(id=${encounterId})}" method="post" class="card card-body shadow-sm">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <div class="row g-3">
+      <div class="col-md-4" th:each="t : ${types}">
+        <label class="form-label" th:text="${t.displayEn()}">HR</label>
+        <input class="form-control"
+               th:classappend="${colours != null and colours[t.code()] != null} ? ${colours[t.code()]} : ''"
+               th:name="|vital_${t.code()}|"
+               th:value="${values[t.code()]}"
+               th:placeholder="${t.kind().name() == 'BLOOD_PRESSURE'} ? '120/80' : ''"/>
+        <div class="form-text" th:text="${t.ucumUnit()}"></div>
+      </div>
+    </div>
+
+    <div th:if="${result != null}" class="mt-3">
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between"
+            th:each="r : ${result.readings()}"
+            th:classappend="${colours[r.code()]}">
+          <span>
+            <span th:text="${r.code()}"></span>
+            <span th:if="${r.derived()}" class="badge text-bg-secondary" th:text="#{clinical.vitals.derived}">Derived</span>
+            <span th:if="${r.adultFallback()}" class="badge text-bg-info" th:text="#{clinical.vitals.fallback}">fallback</span>
+            <span th:if="${r.ruleMissing()}" class="badge text-bg-warning" th:text="#{clinical.vitals.ruleMissing}">missing</span>
+          </span>
+          <span>
+            <strong th:text="${r.sign().display()}"></strong>
+            — <span th:text="${r.level()}"></span>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" name="preview" value="1" class="btn btn-outline-primary" th:text="#{clinical.vitals.preview}">Classify</button>
+      <button type="submit" class="btn btn-primary" th:text="#{clinical.vitals.save}">Save</button>
+      <a class="btn btn-link" th:href="@{/clinical/consultations/{id}(id=${encounterId})}" th:text="#{clinical.consult.open}">Open consult</a>
+    </div>
+  </form>
+</main>
+<style>
+  .vital-normal { background-color: #d1e7dd !important; }
+  .vital-borderline { background-color: #fff3cd !important; }
+  .vital-critical { background-color: #f8d7da !important; }
+</style>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

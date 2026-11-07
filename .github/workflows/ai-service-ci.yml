@@ -1,0 +1,71 @@
+name: AI service CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-ci.yml"
+  pull_request:
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-ci.yml"
+
+concurrency:
+  group: ai-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    name: lint + pytest + pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip if package not yet scaffolded
+        id: gate
+        run: |
+          if [[ -f pyproject.toml || -f requirements.txt ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "ai-service package not present yet (T09) — skipping."
+          fi
+
+      - uses: astral-sh/setup-uv@v5
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          enable-cache: true
+
+      - name: Install (dev extras)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          if [[ -f pyproject.toml ]]; then
+            uv sync --extra dev || uv pip install -e ".[dev]" || uv pip install -e .
+          else
+            uv pip install -r requirements.txt
+            uv pip install pytest ruff pip-audit
+          fi
+
+      - name: Ruff lint
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          if command -v uv >/dev/null; then
+            uv run ruff check . || ruff check .
+          else
+            ruff check .
+          fi
+
+      - name: Pytest
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          uv run pytest -q || pytest -q
+
+      - name: pip-audit
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          uv run pip-audit || pip-audit

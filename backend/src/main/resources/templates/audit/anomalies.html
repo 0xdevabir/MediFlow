@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('audit.anomaly.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{audit.anomaly.title}">Anomalies</h1>
+  <div class="mb-3">
+    <a th:href="@{/admin/audit/anomalies(openOnly=true)}" th:text="#{audit.anomaly.openOnly}">Open</a>
+    ·
+    <a th:href="@{/admin/audit/anomalies(openOnly=false)}" th:text="#{audit.anomaly.all}">All</a>
+  </div>
+  <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{audit.anomaly.empty}">Empty</p>
+  <div class="table-responsive" th:unless="${rows.isEmpty()}">
+    <table class="table table-sm align-middle">
+      <thead>
+      <tr>
+        <th th:text="#{audit.anomaly.actor}">Actor</th>
+        <th th:text="#{audit.anomaly.kind}">Kind</th>
+        <th th:text="#{audit.anomaly.window}">Window</th>
+        <th th:text="#{audit.anomaly.count}">Count</th>
+        <th th:text="#{audit.anomaly.threshold}">Threshold</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${rows}">
+        <td th:text="${r.actorName}">name</td>
+        <td th:text="${r.kind}">kind</td>
+        <td>
+          <span th:text="${r.windowStart}">s</span> →
+          <span th:text="${r.windowEnd}">e</span>
+        </td>
+        <td th:text="${r.observedCount}">0</td>
+        <td th:text="${r.threshold}">50</td>
+        <td>
+          <form th:if="${!r.reviewed()}" class="d-flex gap-2"
+                th:action="@{/admin/audit/anomalies/{id}/review(id=${r.id})}" method="post">
+            <input class="form-control form-control-sm" name="note" th:placeholder="#{audit.anomaly.note}"/>
+            <button class="btn btn-sm btn-outline-primary" type="submit"
+                    th:text="#{audit.anomaly.review}">Review</button>
+          </form>
+          <span th:if="${r.reviewed()}" class="text-muted small"
+                th:text="${r.reviewNote}">reviewed</span>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3"><a th:href="@{/admin/audit}" th:text="#{audit.admin.title}">Back</a></p>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

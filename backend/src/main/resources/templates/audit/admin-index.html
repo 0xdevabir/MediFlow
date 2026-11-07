@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('audit.admin.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{audit.admin.title}">Audit &amp; compliance</h1>
+  <p class="text-muted"
+     th:text="#{audit.admin.retention(${retentionYears})}">Retention</p>
+  <p th:if="${lastCheck != null}">
+    <span th:text="#{audit.chain.last}">Last check</span>:
+    <strong th:text="${lastCheck.message}">OK</strong>
+  </p>
+  <p th:if="${openAnomalies > 0}" class="text-warning"
+     th:text="#{audit.admin.openAnomalies(${openAnomalies})}">alerts</p>
+  <div class="list-group">
+    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/chain}"
+       th:text="#{audit.admin.chain}">Chain</a>
+    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/search}"
+       th:text="#{audit.admin.search}">Search</a>
+    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/anomalies}"
+       th:text="#{audit.admin.anomalies}">Anomalies</a>
+    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/export}"
+       th:text="#{audit.admin.export}">Export</a>
+  </div>
+  <p class="mt-3"><a th:href="@{/admin}" th:text="#{admin.dashboard.title}">Admin</a></p>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

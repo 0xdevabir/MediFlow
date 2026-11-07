@@ -170,9 +170,9 @@ class Pipeline:
             unit = DOSE_UNIT_FROM_FORM.get(ent.form.value or "", "tablet")
             qty = ent.slot_qty
             plural = "s" if qty > 1 and unit != "ml" else ""
-            from .extract import _fmt_num
+            from .extract import format_num
 
-            dose = Field(f"{_fmt_num(qty)} {unit}{plural}", ent.slot_conf)
+            dose = Field(f"{format_num(qty)} {unit}{plural}", ent.slot_conf)
         route = ent.route
         if not route.value and ent.form.value:
             inferred = ROUTE_FROM_FORM.get(ent.form.value)
@@ -245,4 +245,5 @@ def build_pipeline(
 
 def _ms(t0: float) -> int:
     return max(0, int((time.perf_counter() - t0) * 1000))
+
 

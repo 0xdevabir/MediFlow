@@ -95,8 +95,11 @@ def _slot_value(s: str) -> float:
     return 0.5 if s == "½" else float(s)
 
 
-def _fmt_num(v: float) -> str:
+def format_num(v: float) -> str:
     return str(int(v)) if float(v).is_integer() else f"{v:g}"
+
+
+_fmt_num = format_num  # internal alias
 
 
 def _freq_from_pattern(m: re.Match[str]) -> Frequency | None:

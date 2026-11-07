@@ -1,0 +1,119 @@
+# Metric names marked (app) are emitted by MediFlow modules - contract in docs/plan/requests/T13.md.
+groups:
+  - name: mediflow-availability
+    rules:
+      - alert: BackendDown
+        expr: sum(up{job="backend"}) == 0 or absent(up{job="backend"})
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "MediFlow backend is down"
+          description: "No backend instance has been scrapeable for 1 minute."
+
+      - alert: AiServiceDown
+        expr: (sum(up{job="ai-worker"}) == 0 or absent(up{job="ai-worker"})) or (sum(up{job="ai-api"}) == 0)
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "AI service is down - prescriptions fall back to manual entry"
+          description: "No AI worker/API reachable for 1m. The backend circuit breaker should route every draft to manual entry."
+
+      - alert: AiWorkerCapacityReduced
+        expr: sum(up{job="ai-worker"}) < count(up{job="ai-worker"})
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $value }} AI workers up (some replicas down)"
+
+  - name: mediflow-queues
+    rules:
+      - alert: AiQueueBacklog
+        expr: sum(rabbitmq_queue_messages_ready{queue="ai.rx.requests"}) > 20
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "AI request queue backlog: {{ $value }} jobs waiting"
+          description: "Jobs waiting longer than the 10 s budget will time out to manual entry. Scale ai-worker replicas."
+
+      - alert: AiQueueNoConsumers
+        expr: sum(rabbitmq_queue_consumers{queue="ai.rx.requests"}) == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "ai.rx.requests has no consumers"
+
+      - alert: DeadLetterQueueNotEmpty
+        expr: sum by (queue) (rabbitmq_queue_messages{queue=~".*dlq"}) > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Dead-letter queue {{ $labels.queue }} has {{ $value }} messages"
+
+      - alert: NotificationBacklog
+        expr: sum(rabbitmq_queue_messages_ready{queue=~"notify\\..*", queue!="notify.retry"}) > 200
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Notification queues backlog: {{ $value }}"
+
+  - name: mediflow-integrity
+    rules:
+      # (app) T11 periodically verifies the hash chain and sets this gauge: 1 = intact, 0 = broken
+      - alert: AuditChainBroken
+        expr: min(mediflow_audit_chain_valid) == 0
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "Audit hash chain verification FAILED"
+          description: "The append-only audit log hash chain is broken - possible tampering. Freeze changes and start incident response."
+
+      - alert: AuditChainVerificationStale
+        expr: time() - max(mediflow_audit_chain_last_verified_timestamp_seconds) > 7200
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Audit chain has not been verified for over 2h"
+
+  - name: mediflow-latency
+    rules:
+      - record: mediflow:http_server_requests:p95_5m
+        expr: >
+          histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job="backend",
+          uri!~"/actuator.*|.*/events|.*/stream"}[5m])))
+
+      - alert: ApiP95Breach
+        expr: mediflow:http_server_requests:p95_5m > 0.5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "API p95 latency {{ $value | humanizeDuration }} > 500 ms"
+
+      # (app) T09: histogram mediflow_ai_job_duration_seconds (end-to-end per job)
+      - record: mediflow:ai_job:p95_5m
+        expr: histogram_quantile(0.95, sum by (le) (rate(mediflow_ai_job_duration_seconds_bucket[5m])))
+
+      - alert: AiP95Breach
+        expr: mediflow:ai_job:p95_5m > 5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "AI end-to-end p95 {{ $value | humanizeDuration }} > 5 s"
+
+      - alert: ApiErrorRateHigh
+        expr: >
+          sum(rate(http_server_requests_seconds_count{job="backend",status=~"5.."}[5m]))
+          / clamp_min(sum(rate(http_server_requests_seconds_count{job="backend"}[5m])), 1e-9) > 0.02
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Backend 5xx rate {{ $value | humanizePercentage }} > 2%"
+
+      # (app) T09: counter mediflow_ai_jobs_total{status="OK|UNREADABLE|ERROR|TIMEOUT"}
+      - alert: AiErrorRateHigh
+        expr: >
+          sum(rate(mediflow_ai_jobs_total{status=~"ERROR|TIMEOUT"}[10m]))
+          / clamp_min(sum(rate(mediflow_ai_jobs_total[10m])), 1e-9) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "AI job error/timeout rate {{ $value | humanizePercentage }} > 10%"

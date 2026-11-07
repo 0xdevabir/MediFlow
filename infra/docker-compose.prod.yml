@@ -45,7 +45,7 @@ x-ai-env: &ai-env
   MEDIFLOW_AI_METRICS_PORT: "9102"
 
 services:
-  # ---- Data plane (internal only) ----
+  # ---- Data plane (data network; internal:true) ----
   postgres:
     image: postgres:16.9-bookworm
     restart: unless-stopped
@@ -95,7 +95,8 @@ services:
       - rabbit_data:/var/lib/rabbitmq
       - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
       - ./secrets/rabbitmq-credentials.conf:/etc/rabbitmq/conf.d/90-credentials.conf:ro
-    networks: [data]
+    # Also on `app` so Prometheus can scrape :15692 (no host ports published).
+    networks: [app, data]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -287,7 +288,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
-    networks: [internal]
+    networks: [app]
     ports:
       - "${MEDIFLOW_GRAFANA_PORT:-3000}:3000"
     depends_on:
@@ -329,6 +330,9 @@ volumes:
   prometheus_data:
   alertmanager_data:
   grafana_data:
+
+
+
 
 
 

@@ -159,8 +159,8 @@ public class NotificationService implements NotificationPort {
       Priority priority) {
     List<Notification> created = new ArrayList<>();
     for (Channel channel : channels) {
-      if (channel == Channel.IN_APP && contact.userId() == null) {
-        continue; // no account to show it to
+      if (!reachable(contact, channel)) {
+        continue; // e.g. explicit PUSH for a user without a registered device
       }
       Notification n =
           writer.create(
@@ -179,5 +179,15 @@ public class NotificationService implements NotificationPort {
           body);
     }
     return created;
+  }
+
+  /** Whether the recipient can receive {@code channel} at all. */
+  public static boolean reachable(Contact contact, Channel channel) {
+    return switch (channel) {
+      case PUSH -> !contact.pushTokens().isEmpty();
+      case SMS -> contact.hasPhone();
+      case EMAIL -> contact.hasEmail();
+      case IN_APP -> contact.userId() != null;
+    };
   }
 }

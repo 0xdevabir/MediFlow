@@ -64,7 +64,9 @@ public class DeliveryService {
     this.clock = clock;
   }
 
-  @Transactional
+  // REQUIRES_NEW: may be invoked from afterCommit() of the publishing transaction, whose resources
+  // are still bound; joining it would silently lose these writes.
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
   public DeliveryOutcome attempt(UUID notificationId, int attempt) {
     Optional<Notification> found = notifications.findById(notificationId);
     if (found.isEmpty() || found.get().getStatus() != NotificationStatus.PENDING) {
@@ -148,14 +150,7 @@ public class DeliveryService {
     List<Channel> order = Channel.ESCALATION_ORDER;
     for (int i = order.indexOf(failed) + 1; i < order.size(); i++) {
       Channel c = order.get(i);
-      boolean reachable =
-          switch (c) {
-            case PUSH -> !contact.pushTokens().isEmpty();
-            case SMS -> contact.hasPhone();
-            case EMAIL -> contact.hasEmail();
-            case IN_APP -> contact.userId() != null;
-          };
-      if (reachable) {
+      if (com.mediflow.notification.service.NotificationService.reachable(contact, c)) {
         return Optional.of(c);
       }
     }

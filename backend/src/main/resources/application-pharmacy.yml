@@ -1,0 +1,6 @@
+# Activate with spring.profiles.include=pharmacy or alongside other profiles.
+# Secrets via env; never commit real keys.
+mediflow:
+  pharmacy:
+    internal-api-key: ${MEDIFLOW_INTERNAL_API_KEY:}
+    import-max-rows: ${MEDIFLOW_PHARMACY_IMPORT_MAX_ROWS:50000}

@@ -14,7 +14,7 @@ public final class NumericVital extends VitalSign {
     this.value = Objects.requireNonNull(value, "value");
   }
 
-  static NumericVital parse(VitalType type, String raw) {
+  public static NumericVital parse(VitalType type, String raw) {
     if (raw == null || raw.isBlank()) {
       throw new VitalParseException(type.code(), VitalParseException.EMPTY);
     }

@@ -31,7 +31,7 @@ public final class BloodPressureVital extends VitalSign {
     this.diastolic = diastolic;
   }
 
-  static BloodPressureVital parse(VitalType type, String raw) {
+  public static BloodPressureVital parse(VitalType type, String raw) {
     if (raw == null || raw.isBlank()) {
       throw new VitalParseException(type.code(), VitalParseException.EMPTY);
     }

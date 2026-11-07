@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16.9-bookworm
     container_name: mediflow-postgres
     environment:
       POSTGRES_DB: ${MEDIFLOW_DB_NAME:-mediflow}
@@ -17,7 +17,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:7
+    image: redis:7.4.2-bookworm
     container_name: mediflow-redis
     ports:
       - "${MEDIFLOW_REDIS_PORT:-6379}:6379"
@@ -28,7 +28,7 @@ services:
       retries: 10
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.13.7-management
     container_name: mediflow-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${MEDIFLOW_RABBIT_USER:-mediflow}
@@ -43,7 +43,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: mediflow-minio
     command: server /data --console-address ":9001"
     environment:
@@ -55,17 +55,22 @@ services:
     volumes:
       - mediflow_minio:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.24.1
     container_name: mediflow-mailpit
     ports:
       - "${MEDIFLOW_MAILPIT_SMTP_PORT:-1025}:1025"
       - "${MEDIFLOW_MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
 volumes:
   mediflow_pg:

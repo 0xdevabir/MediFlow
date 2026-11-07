@@ -1,0 +1,31 @@
+# Default: alerts are visible in Alertmanager UI only. Wire a real receiver per deployment
+# (webhook to the on-call tool, or SMTP). Keep credentials out of git: use *_file fields
+# pointing at Docker secrets, e.g. auth_password_file / url_file.
+route:
+  receiver: default
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity="critical"]
+      receiver: default
+      repeat_interval: 30m
+
+receivers:
+  - name: default
+    # webhook_configs:
+    #   - url_file: /run/secrets/ALERT_WEBHOOK_URL
+    #     send_resolved: true
+    # email_configs:
+    #   - to: oncall@example.org
+    #     from: alerts@example.org
+    #     smarthost: smtp.example.org:587
+    #     auth_username: alerts@example.org
+    #     auth_password_file: /run/secrets/ALERT_SMTP_PASSWORD
+
+inhibit_rules:
+  - source_matchers: [alertname="BackendDown"]
+    target_matchers: [alertname=~"ApiP95Breach|ApiErrorRateHigh"]
+  - source_matchers: [alertname="AiServiceDown"]
+    target_matchers: [alertname=~"AiQueueBacklog|AiQueueNoConsumers|AiP95Breach|AiErrorRateHigh"]

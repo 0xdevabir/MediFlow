@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    system: mediflow
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Spring Boot Actuator on the internal management port (MANAGEMENT_SERVER_PORT=8081).
+  # Requires /actuator/prometheus to be reachable without a session (see docs/plan/requests/T13.md).
+  - job_name: backend
+    metrics_path: /actuator/prometheus
+    dns_sd_configs:
+      - names: ["backend"]
+        type: A
+        port: 8081
+
+  # AI service FastAPI process (/metrics via prometheus_client)
+  - job_name: ai-api
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ["ai-api"]
+        type: A
+        port: 8000
+
+  # AI workers (N replicas; Docker DNS returns every replica IP)
+  - job_name: ai-worker
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ["ai-worker"]
+        type: A
+        port: 9102
+
+  # RabbitMQ built-in rabbitmq_prometheus plugin; per-object = per-queue depth
+  - job_name: rabbitmq
+    metrics_path: /metrics/per-object
+    static_configs:
+      - targets: ["rabbitmq:15692"]

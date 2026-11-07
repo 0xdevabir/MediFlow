@@ -1,0 +1,9 @@
+# Generated TLS material (infra/certs/gen-dev-certs.sh) - never commit keys
+certs/out/
+*.key
+*.pem
+*.p12
+# Generated secrets (infra/scripts/gen-secrets.sh)
+secrets/
+# Local backup output
+backup/out/

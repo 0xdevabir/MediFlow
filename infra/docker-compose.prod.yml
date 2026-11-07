@@ -1,0 +1,348 @@
+# MediFlow production-shaped stack (local self-signed TLS OK).
+#
+# Prerequisites (never commit the generated files):
+#   ./infra/certs/gen-dev-certs.sh
+#   ./infra/scripts/gen-secrets.sh
+#
+# Bring-up (do NOT run from the agent; documented for operators):
+#   docker compose -f infra/docker-compose.prod.yml --env-file .env up -d --build
+#   scale workers:  docker compose -f infra/docker-compose.prod.yml up -d --scale ai-worker=3
+#
+# Networks:
+#   edge — nginx published ports (80/443)
+#   app  — backend, AI, observability (optional host ports for Grafana/Prometheus)
+#   data — Postgres/Redis/Rabbit/MinIO; internal:true (no egress / no host ports)
+# Secrets via Docker secrets / bind-mounted files under infra/secrets/ (gitignored).
+
+name: mediflow
+
+x-backend-env: &backend-env
+  SPRING_PROFILES_ACTIVE: ${MEDIFLOW_SPRING_PROFILES:-prod}
+  SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+  MANAGEMENT_SERVER_PORT: "8081"
+  MEDIFLOW_PORT: "8080"
+  MEDIFLOW_DB_URL: jdbc:postgresql://postgres:5432/${MEDIFLOW_DB_NAME:-mediflow}
+  MEDIFLOW_DB_USER: ${MEDIFLOW_DB_USER:-mediflow}
+  MEDIFLOW_REDIS_HOST: redis
+  MEDIFLOW_REDIS_PORT: "6379"
+  MEDIFLOW_RABBIT_HOST: rabbitmq
+  MEDIFLOW_RABBIT_PORT: "5672"
+  MEDIFLOW_RABBIT_USER: ${MEDIFLOW_RABBIT_USER:-mediflow}
+  MEDIFLOW_MINIO_ENDPOINT: http://minio:9000
+  MEDIFLOW_MINIO_BUCKET: ${MEDIFLOW_MINIO_BUCKET:-mediflow}
+  SERVER_FORWARD_HEADERS_STRATEGY: framework
+
+x-ai-env: &ai-env
+  MEDIFLOW_RABBIT_HOST: rabbitmq
+  MEDIFLOW_RABBIT_PORT: "5672"
+  MEDIFLOW_RABBIT_USER: ${MEDIFLOW_RABBIT_USER:-mediflow}
+  MEDIFLOW_MINIO_ENDPOINT: http://minio:9000
+  MEDIFLOW_MINIO_BUCKET: ${MEDIFLOW_MINIO_BUCKET:-mediflow}
+  MEDIFLOW_AI_MODEL_DIR: /models
+  AI_APP_MODULE: ${AI_APP_MODULE:-mediflow_ai.app:app}
+  AI_WORKER_MODULE: ${AI_WORKER_MODULE:-mediflow_ai.worker}
+  AI_PORT: "8000"
+  MEDIFLOW_AI_METRICS_PORT: "9102"
+
+services:
+  # ---- Data plane (data network; internal:true) ----
+  postgres:
+    image: postgres:16.9-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${MEDIFLOW_DB_NAME:-mediflow}
+      POSTGRES_USER: ${MEDIFLOW_DB_USER:-mediflow}
+      POSTGRES_PASSWORD_FILE: /run/secrets/MEDIFLOW_DB_PASSWORD
+    secrets:
+      - MEDIFLOW_DB_PASSWORD
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  redis:
+    image: redis:7.4.2-bookworm
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+      - ./secrets/MEDIFLOW_REDIS_PASSWORD:/run/secrets/MEDIFLOW_REDIS_PASSWORD:ro
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        PASS=$$(cat /run/secrets/MEDIFLOW_REDIS_PASSWORD)
+        exec redis-server --requirepass "$$PASS" --save 60 1000 --appendonly yes
+    networks: [data]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -a \"$$(cat /run/secrets/MEDIFLOW_REDIS_PASSWORD)\" --no-auth-warning ping | grep -q PONG",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    restart: unless-stopped
+    volumes:
+      - rabbit_data:/var/lib/rabbitmq
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./secrets/rabbitmq-credentials.conf:/etc/rabbitmq/conf.d/90-credentials.conf:ro
+    # Also on `app` so Prometheus can scrape :15692 (no host ports published).
+    networks: [app, data]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/MEDIFLOW_MINIO_ACCESS_KEY
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/MEDIFLOW_MINIO_SECRET_KEY
+      MINIO_KMS_SECRET_KEY_FILE: /run/secrets/MINIO_KMS_SECRET_KEY
+    secrets:
+      - MEDIFLOW_MINIO_ACCESS_KEY
+      - MEDIFLOW_MINIO_SECRET_KEY
+      - MINIO_KMS_SECRET_KEY
+    volumes:
+      - minio_data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # ---- Application ----
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: ${MEDIFLOW_BACKEND_IMAGE:-mediflow-backend:local}
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    secrets:
+      - MEDIFLOW_DB_PASSWORD
+      - MEDIFLOW_RABBIT_PASSWORD
+      - MEDIFLOW_MINIO_ACCESS_KEY
+      - MEDIFLOW_MINIO_SECRET_KEY
+      - MEDIFLOW_FIELD_ENCRYPTION_KEY
+      - source: spring_data_redis_password
+        target: spring.data.redis.password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [app, data]
+    # Actuator/prometheus on 8081 is app-network only (nginx blocks /actuator/ on the edge).
+
+  ai-api:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+      args:
+        AI_EXTRAS: ${AI_EXTRAS:-paddle,tesseract}
+    image: ${MEDIFLOW_AI_IMAGE:-mediflow-ai:local}
+    restart: unless-stopped
+    command: ["api"]
+    environment:
+      <<: *ai-env
+    secrets:
+      - MEDIFLOW_RABBIT_PASSWORD
+      - MEDIFLOW_MINIO_ACCESS_KEY
+      - MEDIFLOW_MINIO_SECRET_KEY
+    volumes:
+      - ai_models:/models:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [app, data]
+
+  ai-worker:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+      args:
+        AI_EXTRAS: ${AI_EXTRAS:-paddle,tesseract}
+    image: ${MEDIFLOW_AI_IMAGE:-mediflow-ai:local}
+    restart: unless-stopped
+    command: ["worker"]
+    environment:
+      <<: *ai-env
+    secrets:
+      - MEDIFLOW_RABBIT_PASSWORD
+      - MEDIFLOW_MINIO_ACCESS_KEY
+      - MEDIFLOW_MINIO_SECRET_KEY
+    volumes:
+      - ai_models:/models:ro
+    depends_on:
+      ai-api:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks: [app, data]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,sys,urllib.request; p=os.environ.get('MEDIFLOW_AI_METRICS_PORT','9102'); sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/metrics'%p,timeout=4).status==200 else 1)",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    # Default two workers; scale with:
+    #   docker compose -f infra/docker-compose.prod.yml up -d --scale ai-worker=N
+
+  # ---- Edge ----
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.27.4-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${MEDIFLOW_HTTP_PORT:-80}:8080"
+      - "${MEDIFLOW_HTTPS_PORT:-443}:8443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certs/out/server.crt:/etc/nginx/certs/server.crt:ro
+      - ./certs/out/server.key:/etc/nginx/certs/server.key:ro
+    networks: [edge, app]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # ---- Observability (app network; optional host ports for local ops) ----
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+      - --web.listen-address=0.0.0.0:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    networks: [app]
+    ports:
+      - "${MEDIFLOW_PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks: [app]
+    ports:
+      - "${MEDIFLOW_ALERTMANAGER_PORT:-9093}:9093"
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/GRAFANA_ADMIN_PASSWORD
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    secrets:
+      - GRAFANA_ADMIN_PASSWORD
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks: [app]
+    ports:
+      - "${MEDIFLOW_GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+
+secrets:
+  MEDIFLOW_DB_PASSWORD:
+    file: ./secrets/MEDIFLOW_DB_PASSWORD
+  MEDIFLOW_RABBIT_PASSWORD:
+    file: ./secrets/MEDIFLOW_RABBIT_PASSWORD
+  MEDIFLOW_MINIO_ACCESS_KEY:
+    file: ./secrets/MEDIFLOW_MINIO_ACCESS_KEY
+  MEDIFLOW_MINIO_SECRET_KEY:
+    file: ./secrets/MEDIFLOW_MINIO_SECRET_KEY
+  MEDIFLOW_FIELD_ENCRYPTION_KEY:
+    file: ./secrets/MEDIFLOW_FIELD_ENCRYPTION_KEY
+  MINIO_KMS_SECRET_KEY:
+    file: ./secrets/MINIO_KMS_SECRET_KEY
+  GRAFANA_ADMIN_PASSWORD:
+    file: ./secrets/GRAFANA_ADMIN_PASSWORD
+  spring_data_redis_password:
+    file: ./secrets/spring.data.redis.password
+
+networks:
+  edge:
+    driver: bridge
+  app:
+    driver: bridge
+  data:
+    driver: bridge
+    internal: true
+
+volumes:
+  pg_data:
+  redis_data:
+  rabbit_data:
+  minio_data:
+  ai_models:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

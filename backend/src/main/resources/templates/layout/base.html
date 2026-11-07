@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(pageTitleKey)">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="#{__${pageTitleKey}__}">MediFlow</title>
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}"/>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body>
+<nav th:fragment="nav" class="navbar navbar-expand-lg navbar-dark bg-teal mb-4">
+  <div class="container">
+    <a class="navbar-brand fw-semibold" th:href="@{/}" th:text="#{app.name}">MediFlow</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+            aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item" sec:authorize="hasAnyRole('PATIENT','FRONT_DESK','ADMIN')">
+          <a class="nav-link" th:href="@{/patients}" th:text="#{nav.patients}">Patients</a>
+        </li>
+        <li class="nav-item" sec:authorize="isAuthenticated()">
+          <a class="nav-link" th:href="@{/directory}" th:text="#{nav.directory}">Directory</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('PATIENT','FRONT_DESK','DOCTOR','NURSE','ADMIN')">
+          <a class="nav-link" th:href="@{/appointments}" th:text="#{nav.appointments}">Appointments</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('FRONT_DESK','NURSE','DOCTOR','ER','ADMIN')">
+          <a class="nav-link" th:href="@{/queue}" th:text="#{nav.queue}">Queue</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('DOCTOR','NURSE','ADMIN')">
+          <a class="nav-link" th:href="@{/consultations}" th:text="#{nav.consultations}">Consultations</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('DOCTOR','PHARMACIST','ADMIN')">
+          <a class="nav-link" th:href="@{/prescriptions}" th:text="#{nav.prescriptions}">Prescriptions</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('LAB_TECH','DOCTOR','PATIENT','FRONT_DESK','ADMIN')">
+          <a class="nav-link" th:href="@{/lab}" th:text="#{nav.lab}">Lab</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('PHARMACIST','ADMIN')">
+          <a class="nav-link" th:href="@{/pharmacy}" th:text="#{nav.pharmacy}">Pharmacy</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','CLINICAL_APPROVER')">
+          <a class="nav-link" th:href="@{/admin}" th:text="#{nav.admin}">Admin</a>
+        </li>
+        <li class="nav-item" sec:authorize="isAuthenticated()">
+          <a class="nav-link" th:href="@{/audit/me}" th:text="#{nav.audit}">My access log</a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center gap-2">
+        <a class="btn btn-sm btn-outline-light" th:href="@{''(lang=en)}">EN</a>
+        <a class="btn btn-sm btn-outline-light" th:href="@{''(lang=bn)}">বাংলা</a>
+        <span class="text-white-50 small" sec:authorize="isAuthenticated()" sec:authentication="name"></span>
+        <form th:action="@{/logout}" method="post" class="d-inline" sec:authorize="isAuthenticated()">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button class="btn btn-sm btn-light" type="submit" th:text="#{nav.logout}">Logout</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div th:fragment="flash">
+  <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+  <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+</div>
+
+<th:block th:fragment="scripts">
+  <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+  <script th:src="@{/js/sse.js}"></script>
+</th:block>
+</body>
+</html>

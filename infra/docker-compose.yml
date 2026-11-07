@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: mediflow-postgres
+    environment:
+      POSTGRES_DB: ${MEDIFLOW_DB_NAME:-mediflow}
+      POSTGRES_USER: ${MEDIFLOW_DB_USER:-mediflow}
+      POSTGRES_PASSWORD: ${MEDIFLOW_DB_PASSWORD:-mediflow}
+    ports:
+      - "${MEDIFLOW_DB_PORT:-5432}:5432"
+    volumes:
+      - mediflow_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MEDIFLOW_DB_USER:-mediflow} -d ${MEDIFLOW_DB_NAME:-mediflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: mediflow-redis
+    ports:
+      - "${MEDIFLOW_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: mediflow-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${MEDIFLOW_RABBIT_USER:-mediflow}
+      RABBITMQ_DEFAULT_PASS: ${MEDIFLOW_RABBIT_PASSWORD:-mediflow}
+    ports:
+      - "${MEDIFLOW_RABBIT_PORT:-5672}:5672"
+      - "${MEDIFLOW_RABBIT_MGMT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: mediflow-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MEDIFLOW_MINIO_ACCESS_KEY:-mediflow}
+      MINIO_ROOT_PASSWORD: ${MEDIFLOW_MINIO_SECRET_KEY:-mediflowsecret}
+    ports:
+      - "${MEDIFLOW_MINIO_PORT:-9000}:9000"
+      - "${MEDIFLOW_MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - mediflow_minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mediflow-mailpit
+    ports:
+      - "${MEDIFLOW_MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MEDIFLOW_MAILPIT_UI_PORT:-8025}:8025"
+
+volumes:
+  mediflow_pg:
+  mediflow_minio:

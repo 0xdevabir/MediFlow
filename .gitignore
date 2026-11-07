@@ -1,11 +1,55 @@
-# graft's local graph cache — regenerable, not committed (run `graft build`).
-/graft/
+# Build
+**/target/
+**/build/
+**/.gradle/
+**/out/
 
-# OS / build / local
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+.factorypath
+
+# OS
 .DS_Store
-docs/plan/logs/
-target/
-.venv/
-__pycache__/
+Thumbs.db
+
+# Env / secrets
 .env
+.env.*
+!.env.example
+**/application-local.yml
+**/secrets/
+
+# Python
+ai-service/.venv/
+ai-service/**/__pycache__/
+ai-service/**/*.pyc
+ai-service/.pytest_cache/
+ai-service/.ruff_cache/
+ai-service/dist/
+ai-service/*.egg-info/
+
+# Logs / runtime
 *.log
+logs/
+tmp/
+.cache/
+
+# Node (if any tooling appears)
+node_modules/
+
+# Testcontainers / Docker leftovers
+.testcontainers/
+
+# Coverage
+**/jacoco.exec
+**/coverage/
+htmlcov/

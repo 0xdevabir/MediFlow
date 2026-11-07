@@ -1,0 +1,20 @@
+:root {
+  --mf-teal: #0f6e6a;
+  --mf-teal-dark: #0b5552;
+}
+
+.bg-teal {
+  background-color: var(--mf-teal) !important;
+}
+
+.btn-teal {
+  background-color: var(--mf-teal);
+  border-color: var(--mf-teal);
+  color: #fff;
+}
+
+.btn-teal:hover {
+  background-color: var(--mf-teal-dark);
+  border-color: var(--mf-teal-dark);
+  color: #fff;
+}

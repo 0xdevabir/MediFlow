@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: mediflow
+  datasource:
+    url: ${MEDIFLOW_DB_URL:jdbc:postgresql://localhost:5432/mediflow}
+    username: ${MEDIFLOW_DB_USER:mediflow}
+    password: ${MEDIFLOW_DB_PASSWORD:mediflow}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    out-of-order: true
+  data:
+    redis:
+      host: ${MEDIFLOW_REDIS_HOST:localhost}
+      port: ${MEDIFLOW_REDIS_PORT:6379}
+  session:
+    store-type: redis
+    timeout: ${MEDIFLOW_SESSION_TIMEOUT_MINUTES:15}m
+    redis:
+      namespace: mediflow:session
+  rabbitmq:
+    host: ${MEDIFLOW_RABBIT_HOST:localhost}
+    port: ${MEDIFLOW_RABBIT_PORT:5672}
+    username: ${MEDIFLOW_RABBIT_USER:mediflow}
+    password: ${MEDIFLOW_RABBIT_PASSWORD:mediflow}
+  mail:
+    host: ${MEDIFLOW_MAIL_HOST:localhost}
+    port: ${MEDIFLOW_MAIL_PORT:1025}
+  thymeleaf:
+    cache: false
+  messages:
+    basename: messages/common,messages/identity,messages/patient,messages/directory,messages/appointment,messages/clinical,messages/prescription,messages/lab,messages/pharmacy,messages/notification,messages/audit,messages/admin,messages/fhir
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  servlet:
+    session:
+      timeout: ${MEDIFLOW_SESSION_TIMEOUT_MINUTES:15}m
+      cookie:
+        http-only: true
+        same-site: strict
+        secure: false
+
+server:
+  port: ${MEDIFLOW_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+mediflow:
+  field-encryption-key: ${MEDIFLOW_FIELD_ENCRYPTION_KEY:}
+  minio:
+    endpoint: ${MEDIFLOW_MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MEDIFLOW_MINIO_ACCESS_KEY:mediflow}
+    secret-key: ${MEDIFLOW_MINIO_SECRET_KEY:mediflowsecret}
+    bucket: ${MEDIFLOW_MINIO_BUCKET:mediflow}
+
+logging:
+  level:
+    root: INFO
+    com.mediflow: INFO

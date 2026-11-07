@@ -84,6 +84,15 @@ public class LoginAttemptService {
     states.findForUpdate(userId).ifPresent(LockoutPolicy::recordSuccess);
   }
 
+  /** After a password reset / change: clear the lock and remember when it changed. */
+  @Transactional
+  public void passwordChanged(UUID userId) {
+    LoginState state = lockedState(userId);
+    LockoutPolicy.recordSuccess(state);
+    state.setPasswordChangedAt(clock.now());
+    states.save(state);
+  }
+
   /** Row for the user, created on first use, locked for update. */
   @Transactional(propagation = Propagation.MANDATORY)
   public LoginState lockedState(UUID userId) {

@@ -34,4 +34,19 @@ public class LabStaffQueries {
         new MapSqlParameterSource("uid", userId),
         UUID.class);
   }
+
+  /** User ids of practitioners with an active role at the hospital (duty-doctor alert list). */
+  public List<UUID> dutyDoctorUserIds(UUID hospitalId) {
+    return jdbc.queryForList(
+        """
+        SELECT DISTINCT p.user_id FROM practitioner p
+        JOIN practitioner_role pr ON pr.practitioner_id = p.id
+        JOIN user_role ur ON ur.user_id = p.user_id
+        WHERE pr.hospital_id = :hid AND pr.active AND p.user_id IS NOT NULL
+          AND ur.role = 'ROLE_DOCTOR'
+        """,
+        new MapSqlParameterSource("hid", hospitalId),
+        UUID.class);
+  }
 }
+

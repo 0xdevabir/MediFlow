@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('identity.mfa.verify.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5" style="max-width: 480px;">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="${stepUp} ? #{identity.mfa.stepUp.title} : #{identity.mfa.verify.title}">Two-factor check</h1>
+  <p th:text="${stepUp} ? #{identity.mfa.stepUp.intro} : #{identity.mfa.verify.intro}">Enter the code from your authenticator app.</p>
+  <form th:action="${stepUp} ? @{/identity/mfa/step-up} : @{/identity/mfa/verify}" method="post" class="card card-body shadow-sm">
+    <input type="hidden" name="continue" th:value="${continueUrl}" th:if="${stepUp}"/>
+    <label class="form-label" for="code" th:text="#{identity.mfa.code}">6-digit code</label>
+    <input class="form-control mb-3" id="code" name="code" inputmode="numeric" autocomplete="one-time-code"
+           pattern="[0-9 ]{6,7}" maxlength="7" required autofocus/>
+    <button class="btn btn-teal" type="submit" th:text="#{identity.mfa.verify.submit}">Verify</button>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

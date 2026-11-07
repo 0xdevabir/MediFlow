@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('identity.mfa.enrol.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5" style="max-width: 560px;">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{identity.mfa.enrol.title}">Set up two-factor sign-in</h1>
+  <p th:text="#{identity.mfa.enrol.intro}">Scan the QR code with an authenticator app, then enter the 6-digit code.</p>
+  <div class="card shadow-sm mb-3">
+    <div class="card-body text-center">
+      <img th:src="${qr}" width="220" height="220" th:alt="#{identity.mfa.enrol.qrAlt}" alt="QR code"/>
+      <p class="small text-muted mt-2 mb-0">
+        <span th:text="#{identity.mfa.enrol.manual}">Or enter this key manually:</span>
+        <code th:text="${secret}">SECRET</code>
+      </p>
+    </div>
+  </div>
+  <form th:action="@{/identity/mfa/enrol}" method="post" class="card card-body shadow-sm">
+    <label class="form-label" for="code" th:text="#{identity.mfa.code}">6-digit code</label>
+    <input class="form-control mb-3" id="code" name="code" inputmode="numeric" autocomplete="one-time-code"
+           pattern="[0-9 ]{6,7}" maxlength="7" required autofocus/>
+    <button class="btn btn-teal" type="submit" th:text="#{identity.mfa.enrol.submit}">Confirm</button>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

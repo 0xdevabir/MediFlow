@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('clinical.vitals.trend.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{clinical.vitals.trend.title}">Vitals trend</h1>
+
+  <form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+      <label class="form-label" th:text="#{clinical.consult.vitalsTrend}">Type</label>
+      <select name="type" class="form-select">
+        <option th:each="t : ${types}" th:value="${t.code()}" th:text="${t.displayEn()}"
+                th:selected="${t.code() == type}"></option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label">Days</label>
+      <input type="number" min="1" max="90" name="days" class="form-control" th:value="${days}"/>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary" type="submit">Show</button>
+    </div>
+  </form>
+
+  <div th:if="${#lists.isEmpty(points)}" class="text-muted" th:text="#{clinical.consult.none}">None</div>
+
+  <svg th:if="${!#lists.isEmpty(points)}" viewBox="0 0 640 200" width="100%" height="200"
+       class="bg-white border rounded" aria-label="Trend chart">
+    <polyline fill="none" stroke="#0d6efd" stroke-width="2"
+              th:points="${T(com.mediflow.clinical.vitals.web.TrendSvg).polyline(points, 640, 200)}"/>
+  </svg>
+
+  <table class="table table-sm mt-3" th:if="${!#lists.isEmpty(points)}">
+    <thead>
+    <tr>
+      <th>When</th>
+      <th>Value</th>
+      <th th:text="#{clinical.consult.level}">Class</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="p : ${points}">
+      <td th:text="${p.recordedAt}"></td>
+      <td>
+        <span th:text="${p.valueText != null ? p.valueText : p.valueNumeric}"></span>
+        <span class="text-muted" th:text="${p.unit}"></span>
+      </td>
+      <td th:text="${p.classification}"></td>
+    </tr>
+    </tbody>
+  </table>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

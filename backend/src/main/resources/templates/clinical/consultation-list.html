@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('clinical.consult.list.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0" th:text="#{clinical.consult.list.title}">Consultations</h1>
+    <span th:if="${labBadgeCount != null and labBadgeCount > 0}" class="badge text-bg-danger"
+          th:text="#{clinical.consult.labBadge(${labBadgeCount})}">0 new</span>
+  </div>
+
+  <div th:if="${#lists.isEmpty(encounters)}" class="text-muted" th:text="#{clinical.consult.none}">None</div>
+  <table class="table table-hover" th:if="${!#lists.isEmpty(encounters)}">
+    <thead>
+    <tr>
+      <th>Encounter</th>
+      <th th:text="#{clinical.consult.patient}">Patient</th>
+      <th>Started</th>
+      <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="e : ${encounters}">
+      <td th:text="${e.id}"></td>
+      <td th:text="${e.patientId}"></td>
+      <td th:text="${e.startedAt}"></td>
+      <td>
+        <a class="btn btn-sm btn-primary" th:href="@{/clinical/consultations/{id}(id=${e.id})}"
+           th:text="#{clinical.consult.open}">Open</a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

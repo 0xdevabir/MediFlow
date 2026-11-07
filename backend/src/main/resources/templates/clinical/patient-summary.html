@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('clinical.consult.summary.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{clinical.consult.summary.title}">Patient-readable summary</h1>
+  <pre class="bg-white border rounded p-3" th:text="${summary}">summary</pre>
+  <a class="btn btn-link" th:href="@{/clinical/consultations/{id}(id=${encounterId})}" th:text="#{clinical.consult.open}">Back</a>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

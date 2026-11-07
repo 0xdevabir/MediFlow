@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('directory.admin.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h3 mb-1" th:text="#{directory.admin.title}">Directory admin</h1>
+      <p class="text-muted mb-0" th:text="#{directory.admin.intro}">Maintain directory data.</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" th:href="@{/directory/search}" th:text="#{directory.search.back}">Public search</a>
+  </div>
+
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h5 mb-0" th:text="#{directory.admin.hospitals}">Hospitals</h2>
+      <a class="btn btn-sm btn-teal" th:href="@{/directory/admin/hospitals/new}" th:text="#{directory.admin.new}">Add</a>
+    </div>
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr>
+          <th th:text="#{directory.tests.name}">Name</th>
+          <th th:text="#{directory.admin.parent}">Parent</th>
+          <th th:text="#{directory.hospital.emergency}">Emergency</th>
+          <th th:text="#{directory.admin.ambulance}">Ambulance</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="h : ${hospitals}">
+          <td th:text="${h.name()}"></td>
+          <td th:text="${h.parentName() != null ? h.parentName() : '—'}"></td>
+          <td th:text="${h.emergencyPhone()}"></td>
+          <td th:text="${h.ambulancePhone()}"></td>
+          <td class="text-end"><a th:href="@{/directory/admin/hospitals/{id}(id=${h.id()})}" th:text="#{directory.admin.edit}">Edit</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h5 mb-0" th:text="#{directory.admin.departments}">Departments</h2>
+      <a class="btn btn-sm btn-teal" th:href="@{/directory/admin/departments/new}" th:text="#{directory.admin.new}">Add</a>
+    </div>
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr>
+          <th th:text="#{directory.search.hospital}">Hospital</th>
+          <th th:text="#{directory.tests.name}">Name</th>
+          <th th:text="#{directory.admin.clinical}">Clinical</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="d : ${departments}">
+          <td th:text="${d.hospitalName()}"></td>
+          <td th:text="${d.name()}"></td>
+          <td th:text="${d.clinical()}"></td>
+          <td class="text-end"><a th:href="@{/directory/admin/departments/{id}(id=${d.id()})}" th:text="#{directory.admin.edit}">Edit</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h5 mb-0" th:text="#{directory.admin.practitioners}">Practitioners</h2>
+      <a class="btn btn-sm btn-teal" th:href="@{/directory/admin/practitioners/new}" th:text="#{directory.admin.new}">Add</a>
+    </div>
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr>
+          <th th:text="#{directory.tests.name}">Name</th>
+          <th th:text="#{directory.admin.specialty}">Specialty</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="p : ${practitioners}">
+          <td th:text="${p.name()}"></td>
+          <td th:text="${p.specialty()}"></td>
+          <td class="text-end"><a th:href="@{/directory/admin/practitioners/{id}(id=${p.id()})}" th:text="#{directory.admin.edit}">Edit</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h5 mb-0" th:text="#{directory.admin.roles}">Doctor roles</h2>
+      <a class="btn btn-sm btn-teal" th:href="@{/directory/admin/roles/new}" th:text="#{directory.admin.new}">Add</a>
+    </div>
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr>
+          <th th:text="#{directory.tests.name}">Doctor</th>
+          <th th:text="#{directory.search.hospital}">Hospital</th>
+          <th th:text="#{directory.search.department}">Department</th>
+          <th th:text="#{directory.admin.active}">Active</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="r : ${roles}">
+          <td th:text="${r.name()}"></td>
+          <td th:text="${r.hospitalName()}"></td>
+          <td th:text="${r.departmentName()}"></td>
+          <td th:text="${r.active()}"></td>
+          <td class="text-end">
+            <a th:href="@{/directory/admin/roles/{id}(id=${r.roleId()})}" th:text="#{directory.admin.edit}">Edit</a>
+            <form class="d-inline" th:action="@{/directory/admin/roles/{id}/reconcile(id=${r.roleId()})}" method="post">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn btn-link btn-sm p-0" type="submit" th:text="#{directory.admin.reconcile}">Regenerate</button>
+            </form>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h5 mb-0" th:text="#{directory.admin.tests}">Lab tests</h2>
+      <a class="btn btn-sm btn-teal" th:href="@{/directory/admin/tests/new}" th:text="#{directory.admin.new}">Add</a>
+    </div>
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr>
+          <th th:text="#{directory.tests.code}">Code</th>
+          <th th:text="#{directory.tests.name}">Name</th>
+          <th th:text="#{directory.admin.directAllowed}">Direct</th>
+          <th th:text="#{directory.tests.price}">Price</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="t : ${tests}">
+          <td th:text="${t.code}"></td>
+          <td th:text="${t.name}"></td>
+          <td th:text="${t.directAllowed}"></td>
+          <td th:text="${t.price}"></td>
+          <td class="text-end"><a th:href="@{/directory/admin/tests/{id}(id=${t.id})}" th:text="#{directory.admin.edit}">Edit</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h5 mb-0" th:text="#{directory.admin.packages}">Packages</h2>
+      <a class="btn btn-sm btn-teal" th:href="@{/directory/admin/packages/new}" th:text="#{directory.admin.new}">Add</a>
+    </div>
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm mb-0 align-middle">
+        <thead><tr>
+          <th th:text="#{directory.tests.name}">Name</th>
+          <th th:text="#{directory.search.hospital}">Hospital</th>
+          <th th:text="#{directory.tests.price}">Price</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="p : ${packages}">
+          <td th:text="${p.name()}"></td>
+          <td th:text="${p.hospitalName() != null ? p.hospitalName() : '—'}"></td>
+          <td th:text="${p.price()}"></td>
+          <td class="text-end"><a th:href="@{/directory/admin/packages/{id}(id=${p.id()})}" th:text="#{directory.admin.edit}">Edit</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

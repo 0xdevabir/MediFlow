@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('identity.breakglass.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5" style="max-width: 640px;">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3 text-danger" th:text="#{identity.breakglass.title}">Emergency access (break-glass)</h1>
+  <div class="alert alert-warning" th:text="#{identity.breakglass.warning}">
+    You are not assigned to this patient. Emergency access lasts 60 minutes, is logged and is reviewed by an administrator.
+  </div>
+  <div th:if="${active != null}" class="alert alert-info">
+    <span th:text="#{identity.breakglass.alreadyActive}">You already have active emergency access until</span>
+    <strong th:text="${#temporals.format(activeUntil, 'yyyy-MM-dd HH:mm')}">time</strong>
+  </div>
+  <form th:action="@{/identity/break-glass}" method="post" class="card card-body shadow-sm">
+    <input type="hidden" name="patientId" th:value="${patientId}"/>
+    <input type="hidden" name="continue" th:value="${continueUrl}"/>
+    <label class="form-label" for="reason" th:text="#{identity.breakglass.reason}">Reason (required)</label>
+    <textarea class="form-control mb-1" id="reason" name="reason" rows="4" required
+              th:attr="minlength=${minLength}" maxlength="1000"></textarea>
+    <div class="form-text mb-3" th:text="#{identity.breakglass.reason.help}">Describe the emergency (at least 10 characters).</div>
+    <button class="btn btn-danger" type="submit" th:text="#{identity.breakglass.submit}">Open emergency access</button>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

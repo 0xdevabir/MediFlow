@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('identity.breakglass.review.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{identity.breakglass.review.title}">Break-glass review</h1>
+  <p th:if="${items.isEmpty()}" class="text-muted" th:text="#{identity.breakglass.review.empty}">No emergency access so far.</p>
+  <div class="table-responsive" th:unless="${items.isEmpty()}">
+    <table class="table table-sm align-middle bg-white">
+      <thead><tr>
+        <th th:text="#{identity.breakglass.review.user}">User</th>
+        <th th:text="#{identity.breakglass.review.patient}">Patient (MRN)</th>
+        <th th:text="#{identity.breakglass.reason}">Reason</th>
+        <th th:text="#{identity.breakglass.review.window}">Window</th>
+        <th th:text="#{identity.breakglass.review.outcome}">Outcome</th>
+      </tr></thead>
+      <tbody>
+      <tr th:each="i : ${items}">
+        <td th:text="${i.username}">doctor</td>
+        <td th:text="${i.patientMrn}">MRN</td>
+        <td class="text-break" th:text="${i.reason}">reason</td>
+        <td class="small">
+          <span th:text="${#temporals.format(i.startedLocal(), 'yyyy-MM-dd HH:mm')}"></span> –
+          <span th:text="${#temporals.format(i.expiresLocal(), 'HH:mm')}"></span>
+          <span th:if="${i.active}" class="badge text-bg-danger" th:text="#{identity.breakglass.review.active}">active</span>
+        </td>
+        <td>
+          <div th:if="${i.outcome != null}">
+            <span class="badge" th:classappend="${i.outcome.name() == 'JUSTIFIED'} ? 'text-bg-success' : 'text-bg-warning'"
+                  th:text="#{'identity.breakglass.outcome.' + ${i.outcome.name()}}">JUSTIFIED</span>
+            <div class="small text-muted" th:text="${i.reviewNote}"></div>
+          </div>
+          <form th:if="${i.outcome == null}" th:action="@{/identity/break-glass/{id}/review(id=${i.id})}" method="post" class="d-flex gap-1">
+            <select class="form-select form-select-sm" name="outcome" required>
+              <option th:each="o : ${outcomes}" th:value="${o.name()}" th:text="#{'identity.breakglass.outcome.' + ${o.name()}}">o</option>
+            </select>
+            <input class="form-control form-control-sm" name="note" maxlength="1000" th:placeholder="#{identity.breakglass.review.note}"/>
+            <button class="btn btn-sm btn-teal" type="submit" th:text="#{identity.breakglass.review.save}">Save</button>
+          </form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body>
+<nav th:replace="~{layout/base :: nav}"></nav>
+<main class="container pb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{pharmacy.home.title}">Pharmacy</h1>
+  <div class="mb-3 d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary btn-sm" th:href="@{/pharmacy/stock}" th:text="#{pharmacy.nav.stock}">Stock</a>
+    <a class="btn btn-outline-secondary btn-sm" th:href="@{/pharmacy/stock/low}" th:text="#{pharmacy.home.lowStock}">Low stock</a>
+    <a class="btn btn-outline-secondary btn-sm" sec:authorize="hasRole('ADMIN')"
+       th:href="@{/pharmacy/dictionary}" th:text="#{pharmacy.nav.dictionary}">Dictionary</a>
+    <a class="btn btn-outline-secondary btn-sm" sec:authorize="hasAnyRole('DOCTOR','ADMIN')"
+       th:href="@{/pharmacy/substitutions}" th:text="#{pharmacy.nav.substitutions}">Substitutions</a>
+  </div>
+
+  <section sec:authorize="hasAnyRole('PHARMACIST','ADMIN')" class="mb-4">
+    <h2 class="h5" th:text="#{pharmacy.home.queue}">Signed prescriptions</h2>
+    <p th:if="${queue == null or #lists.isEmpty(queue)}" class="text-muted" th:text="#{pharmacy.home.noQueue}">None</p>
+    <table th:if="${queue != null and !#lists.isEmpty(queue)}" class="table table-sm table-striped">
+      <thead><tr><th>MRN</th><th>Patient</th><th>Items</th><th>Signed</th><th></th></tr></thead>
+      <tbody>
+      <tr th:each="row : ${queue}">
+        <td th:text="${row.mrn}">MRN</td>
+        <td th:text="${row.patientName}">Name</td>
+        <td th:text="${row.itemCount}">1</td>
+        <td th:text="${row.signedAt}">-</td>
+        <td><a class="btn btn-sm btn-primary" th:href="@{/pharmacy/rx/{id}(id=${row.id})}" th:text="#{pharmacy.dispense.title}">Open</a></td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section sec:authorize="hasAnyRole('PHARMACIST','ADMIN')" class="mb-4" th:if="${lowStock != null and !#lists.isEmpty(lowStock)}">
+    <h2 class="h5" th:text="#{pharmacy.home.lowStock}">Low stock</h2>
+    <ul class="list-unstyled">
+      <li th:each="s : ${lowStock}" th:text="|${s.brandName()} ${s.strength()} — ${s.quantity()}/${s.reorderLevel()}|">Napa</li>
+    </ul>
+  </section>
+
+  <section sec:authorize="hasAnyRole('DOCTOR','ADMIN')" th:if="${pendingSubstitutions != null and !#lists.isEmpty(pendingSubstitutions)}">
+    <h2 class="h5" th:text="#{pharmacy.home.substitutions}">Pending</h2>
+    <p><a th:href="@{/pharmacy/substitutions}" th:text="#{pharmacy.nav.substitutions}">Review</a></p>
+  </section>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

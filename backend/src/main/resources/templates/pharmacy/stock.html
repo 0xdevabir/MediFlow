@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body>
+<nav th:replace="~{layout/base :: nav}"></nav>
+<main class="container pb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <p><a th:href="@{/pharmacy}">&larr; Pharmacy</a></p>
+  <h1 class="h3" th:text="${lowOnly} ? #{pharmacy.stock.lowTitle} : #{pharmacy.stock.title}">Stock</h1>
+
+  <table class="table table-sm table-striped">
+    <thead><tr><th>Brand</th><th>Generic</th><th>Qty</th><th>Reorder</th><th>Brand ID</th></tr></thead>
+    <tbody>
+    <tr th:each="r : ${rows}" th:classappend="${r.low()} ? 'table-warning'">
+      <td th:text="|${r.brandName()} ${r.strength()} ${r.form()}|">Napa</td>
+      <td th:text="${r.genericName()}">Para</td>
+      <td th:text="${r.quantity()}">0</td>
+      <td th:text="${r.reorderLevel()}">10</td>
+      <td class="small font-monospace" th:text="${r.brandId()}">uuid</td>
+    </tr>
+    </tbody>
+  </table>
+
+  <h2 class="h5 mt-4" th:text="#{pharmacy.stock.addBatch}">Add batch</h2>
+  <form class="row g-2" th:action="@{/pharmacy/stock/batch}" method="post">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <div class="col-md-4">
+      <label class="form-label" th:text="#{pharmacy.stock.brandId}">Brand ID</label>
+      <input class="form-control" name="brandId" required/>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" th:text="#{pharmacy.stock.batchNo}">Batch</label>
+      <input class="form-control" name="batchNo" required/>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" th:text="#{pharmacy.stock.expiry}">Expiry</label>
+      <input class="form-control" type="date" name="expiryDate" required/>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label" th:text="#{pharmacy.stock.qty}">Qty</label>
+      <input class="form-control" type="number" min="0" name="quantity" required/>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label" th:text="#{pharmacy.stock.reorder}">Reorder</label>
+      <input class="form-control" type="number" min="0" name="reorderLevel" value="10"/>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn btn-primary w-100" type="submit" th:text="#{pharmacy.stock.addBatch}">Save</button>
+    </div>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

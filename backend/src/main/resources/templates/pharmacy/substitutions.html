@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body>
+<nav th:replace="~{layout/base :: nav}"></nav>
+<main class="container pb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <p><a th:href="@{/pharmacy}">&larr; Pharmacy</a></p>
+  <h1 class="h3" th:text="#{pharmacy.substitution.title}">Substitutions</h1>
+  <div class="border rounded p-3 mb-3" th:each="r : ${rows}">
+    <div th:text="|Rx ${r.prescriptionId} · brand ${r.proposedBrandId}|">rx</div>
+    <div class="small" th:text="${r.reason}">reason</div>
+    <form class="d-inline" th:action="@{/pharmacy/substitutions/{id}/decide(id=${r.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="approve" value="true"/>
+      <button class="btn btn-sm btn-success" type="submit" th:text="#{pharmacy.substitution.approve}">Approve</button>
+    </form>
+    <form class="d-inline" th:action="@{/pharmacy/substitutions/{id}/decide(id=${r.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="approve" value="false"/>
+      <button class="btn btn-sm btn-outline-danger" type="submit" th:text="#{pharmacy.substitution.reject}">Reject</button>
+    </form>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

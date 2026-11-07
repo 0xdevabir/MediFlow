@@ -5,3 +5,9 @@ spring:
 logging:
   level:
     com.mediflow: DEBUG
+
+mediflow:
+  identity:
+    mfa:
+      enforce: false
+

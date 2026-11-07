@@ -1,6 +1,8 @@
 spring:
   application:
     name: mediflow
+  config:
+    import: optional:configtree:/run/secrets/
   datasource:
     url: ${MEDIFLOW_DB_URL:jdbc:postgresql://localhost:5432/mediflow}
     username: ${MEDIFLOW_DB_USER:mediflow}
@@ -55,6 +57,9 @@ server:
     include-stacktrace: never
 
 management:
+  server:
+    # Separate management port (Docker / Prometheus scrape). Actuator stays denied on app port via nginx.
+    port: ${MEDIFLOW_MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
@@ -68,6 +73,19 @@ management:
 
 mediflow:
   field-encryption-key: ${MEDIFLOW_FIELD_ENCRYPTION_KEY:}
+  identity:
+    mfa:
+      # Override with mediflow.identity.mfa.enforce=true|false (see MfaEnforcement).
+      # application-dev.yml sets enforce: false.
+  fhir:
+    base-url: ${MEDIFLOW_FHIR_BASE_URL:http://localhost/fhir/r4}
+  notification:
+    transport: ${MEDIFLOW_NOTIFICATION_TRANSPORT:auto}
+    max-attempts: 3
+    mail-from: ${MEDIFLOW_NOTIFICATION_MAIL_FROM:no-reply@mediflow.local}
+  audit:
+    scheduling:
+      enabled: true
   minio:
     endpoint: ${MEDIFLOW_MINIO_ENDPOINT:http://localhost:9000}
     access-key: ${MEDIFLOW_MINIO_ACCESS_KEY:mediflow}

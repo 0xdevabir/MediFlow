@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.audit.chain.AuditRow;
 import com.mediflow.audit.chain.CanonicalJson;
 import com.mediflow.audit.chain.ChainVerification;
+import com.mediflow.audit.metrics.AuditChainMetrics;
 import com.mediflow.shared.port.AuditPort;
+import com.mediflow.shared.port.ClockPort;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -44,14 +46,23 @@ public class AuditChainService {
   private final TransactionTemplate readTx;
   private final CanonicalJson canonicalJson;
   private final AuditPort audit;
+  private final AuditChainMetrics metrics;
+  private final ClockPort clock;
 
   public AuditChainService(
-      JdbcTemplate jdbc, PlatformTransactionManager txManager, ObjectMapper mapper, AuditPort audit) {
+      JdbcTemplate jdbc,
+      PlatformTransactionManager txManager,
+      ObjectMapper mapper,
+      AuditPort audit,
+      AuditChainMetrics metrics,
+      ClockPort clock) {
     this.jdbc = jdbc;
     // own template so the fetch size does not leak into the shared JdbcTemplate bean
     this.streamingJdbc = new JdbcTemplate(jdbc.getDataSource());
     this.streamingJdbc.setFetchSize(500);
     this.audit = audit;
+    this.metrics = metrics;
+    this.clock = clock;
     this.canonicalJson = new CanonicalJson(mapper);
     this.readTx = new TransactionTemplate(txManager);
     this.readTx.setReadOnly(true);
@@ -125,6 +136,7 @@ public class AuditChainService {
         """,
         id, ok, r.rowsChecked(), r.brokenCount(), r.firstBrokenSeq(), broken.isEmpty() ? null : broken,
         r.headSeq(), r.headHash(), msg.toString(), triggeredBy);
+    metrics.recordVerification(ok, clock.now().getEpochSecond());
     return lastCheck().filter(c -> c.id().equals(id)).orElseThrow();
   }
 

@@ -15,6 +15,7 @@
       <h2 class="h5 mb-3" th:text="#{login.title}">Sign in</h2>
       <div th:if="${param.error}" class="alert alert-danger" th:text="#{login.error}">Invalid credentials</div>
       <div th:if="${param.logout}" class="alert alert-success" th:text="#{login.logout}">Signed out</div>
+      <div th:if="${param.reset}" class="alert alert-success" th:text="#{identity.password.reset.done}">Password updated</div>
       <form th:action="@{/login}" method="post">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         <div class="mb-3">
@@ -27,6 +28,9 @@
         </div>
         <button class="btn btn-teal w-100" type="submit" th:text="#{login.submit}">Sign in</button>
       </form>
+      <p class="mt-3 mb-0 text-center">
+        <a th:href="@{/identity/password/forgot}" th:text="#{identity.password.forgot.link}">Forgot password?</a>
+      </p>
     </div>
   </div>
   <p class="small text-muted mt-3 text-center" th:text="#{login.devHint}">Dev profile seeds role users with password "password".</p>

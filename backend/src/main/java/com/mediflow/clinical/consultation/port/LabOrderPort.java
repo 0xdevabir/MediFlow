@@ -4,7 +4,7 @@ import java.util.UUID;
 
 /**
  * Minimal T07 seam. Until Lab module registers a bean, {@link NoOpLabOrderPort} publishes a local
- * {@link LabOrderRequested} event only (no order row is created).
+ * {@link com.mediflow.shared.event.DomainEvents.LabOrderRequested} event only (no order row is created).
  */
 public interface LabOrderPort {
 

@@ -116,8 +116,10 @@ class ConsentAndReferralShareTest {
     assertThat(s.activeAt(now.get().plus(Duration.ofDays(3)))).isFalse();
     Consent backing = consentRows.stream().filter(c -> c.getId().equals(s.getConsentId())).findFirst().orElseThrow();
     assertThat(backing.getVersionLabel()).isEqualTo(ConsentService.REFERRAL_SHARE_VERSION);
+    assertThat(backing.getConsentType()).isEqualTo(ConsentType.REFERRAL_SHARE);
     // referral consent does not count as the registration data-processing consent
     assertThat(consents.hasActiveConsent(patient, ConsentType.DATA_PROCESSING)).isFalse();
+    assertThat(consents.hasActiveConsent(patient, ConsentType.REFERRAL_SHARE)).isTrue();
 
     shares.revoke(s.getId());
     assertThat(s.activeAt(now.get())).isFalse();

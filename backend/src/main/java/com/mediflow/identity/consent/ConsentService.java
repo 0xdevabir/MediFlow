@@ -19,7 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ConsentService {
 
-  /** Version label used for the consent row behind a referral share (see requests/T01.md). */
+  /**
+   * Version label used for the consent row behind a referral share. Prefer {@link
+   * ConsentType#REFERRAL_SHARE}; the DATA_PROCESSING + this label form is kept for rows written
+   * before T14.
+   */
   public static final String REFERRAL_SHARE_VERSION = "REFERRAL_SHARE/v1";
 
   private final IdentityConsentRepository consents;
@@ -73,8 +77,15 @@ public class ConsentService {
     if (patientId == null || type == null) {
       return false;
     }
+    // Exclude legacy DATA_PROCESSING rows that actually represent referral shares.
+    if (type == ConsentType.DATA_PROCESSING) {
+      return consents.findByPatientIdAndConsentTypeOrderByGrantedAtDesc(patientId, type).stream()
+          .filter(c -> !REFERRAL_SHARE_VERSION.equals(c.getVersionLabel()))
+          .findFirst()
+          .map(c -> c.getGranted() && c.getRevokedAt() == null)
+          .orElse(false);
+    }
     return consents.findByPatientIdAndConsentTypeOrderByGrantedAtDesc(patientId, type).stream()
-        .filter(c -> type != ConsentType.DATA_PROCESSING || !REFERRAL_SHARE_VERSION.equals(c.getVersionLabel()))
         .findFirst()
         .map(c -> c.getGranted() && c.getRevokedAt() == null)
         .orElse(false);

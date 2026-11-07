@@ -18,6 +18,7 @@ import com.mediflow.shared.domain.TriageLevel;
 import com.mediflow.shared.domain.VitalClass;
 import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
+import com.mediflow.appointment.redalert.RedAlertMetrics;
 import com.mediflow.shared.port.NotificationPort;
 import com.mediflow.shared.web.CurrentUser;
 import java.time.Instant;
@@ -44,6 +45,7 @@ class CriticalLeavesOpdTest {
   @Mock AuditPort audit;
   @Mock NotificationPort notifications;
   @Mock ClockPort clock;
+  @Mock RedAlertMetrics metrics;
 
   @Test
   void raiseRemovesFromOpdAndCriticalNeverOrdered() {
@@ -59,7 +61,8 @@ class CriticalLeavesOpdTest {
             events,
             audit,
             notifications,
-            clock);
+            clock,
+            metrics);
 
     UUID apptId = UUID.randomUUID();
     Appointment appt = new Appointment();

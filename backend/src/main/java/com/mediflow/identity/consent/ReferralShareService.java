@@ -107,7 +107,7 @@ public class ReferralShareService {
         consents.recordConsent(
             patientId,
             byPatient ? actor : null,
-            ConsentType.DATA_PROCESSING,
+            ConsentType.REFERRAL_SHARE,
             true,
             ConsentService.REFERRAL_SHARE_VERSION);
     ReferralShare s = new ReferralShare();

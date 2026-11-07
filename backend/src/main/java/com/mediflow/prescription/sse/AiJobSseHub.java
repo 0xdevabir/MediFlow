@@ -16,10 +16,16 @@ public class AiJobSseHub {
   private static final long TIMEOUT_MS = 120_000L;
 
   private final Map<UUID, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+  private final SseConnectionMetrics metrics;
+
+  public AiJobSseHub(SseConnectionMetrics metrics) {
+    this.metrics = metrics;
+  }
 
   public SseEmitter subscribe(UUID jobId) {
     SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
     emitters.computeIfAbsent(jobId, id -> new CopyOnWriteArrayList<>()).add(emitter);
+    metrics.connected();
     emitter.onCompletion(() -> remove(jobId, emitter));
     emitter.onTimeout(() -> remove(jobId, emitter));
     emitter.onError(e -> remove(jobId, emitter));
@@ -52,13 +58,14 @@ public class AiJobSseHub {
       } catch (Exception ignored) {
         // already completed
       }
+      metrics.disconnected();
     }
   }
 
   private void remove(UUID jobId, SseEmitter emitter) {
     List<SseEmitter> list = emitters.get(jobId);
-    if (list != null) {
-      list.remove(emitter);
+    if (list != null && list.remove(emitter)) {
+      metrics.disconnected();
       if (list.isEmpty()) {
         emitters.remove(jobId);
       }

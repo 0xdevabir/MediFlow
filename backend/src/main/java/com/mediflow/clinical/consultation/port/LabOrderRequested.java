@@ -1,13 +1,23 @@
 package com.mediflow.clinical.consultation.port;
 
+import com.mediflow.shared.event.DomainEvents;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Local event until T00 adds it to {@code DomainEvents} (see docs/plan/requests/T05.md). */
+/**
+ * @deprecated Prefer {@link DomainEvents.LabOrderRequested}.
+ */
+@Deprecated
 public record LabOrderRequested(
     UUID encounterId,
     UUID patientId,
     UUID hospitalId,
     String testCode,
     UUID requestedBy,
-    Instant at) {}
+    Instant at) {
+
+  public DomainEvents.LabOrderRequested toShared() {
+    return new DomainEvents.LabOrderRequested(
+        encounterId, patientId, hospitalId, testCode, requestedBy, at);
+  }
+}

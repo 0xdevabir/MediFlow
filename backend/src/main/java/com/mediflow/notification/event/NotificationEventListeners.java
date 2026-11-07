@@ -161,6 +161,59 @@ public class NotificationEventListeners {
         });
   }
 
+
+  @TransactionalEventListener(fallbackExecution = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void on(DomainEvents.QueueCalled e) {
+    safely(
+        e,
+        () ->
+            notifications.send(
+                Request.toPatient(
+                    NotificationEventType.QUEUE_NEXT,
+                    e.patientId(),
+                    name(e.patientId()),
+                    e.tokenNo() == null ? "-" : e.tokenNo())));
+  }
+
+  @TransactionalEventListener(fallbackExecution = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void on(DomainEvents.ScheduleChanged e) {
+    safely(
+        e,
+        () -> {
+          reminders.scheduleForAppointment(e.appointmentId(), e.patientId(), e.newStart());
+          String patient = name(e.patientId());
+          notifications.send(
+              Request.toPatient(
+                  NotificationEventType.SCHEDULE_CHANGED, e.patientId(), patient, e.newStart()));
+          doctorUser(e.appointmentId())
+              .ifPresent(
+                  doc ->
+                      notifications.send(
+                          Request.toUser(
+                              NotificationEventType.SCHEDULE_CHANGED, doc, patient, e.newStart())));
+        });
+  }
+
+  @TransactionalEventListener(fallbackExecution = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void on(DomainEvents.PractitionerScheduleChanged e) {
+    safely(
+        e,
+        () ->
+            log.info(
+                "Practitioner schedule changed role={} affectedBookedSlots={}",
+                e.practitionerRoleId(),
+                e.affectedBookedSlotIds().size()));
+  }
+
+  @TransactionalEventListener(fallbackExecution = true)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void on(DomainEvents.FollowUpScheduled e) {
+    safely(e, () -> reminders.scheduleFollowUp(e.sourceId(), e.patientId(), e.date()));
+  }
+
   // ------------------------------------------------------------------ lab
 
   @TransactionalEventListener(fallbackExecution = true)

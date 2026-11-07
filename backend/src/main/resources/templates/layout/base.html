@@ -29,6 +29,12 @@
         <li class="nav-item" sec:authorize="hasAnyRole('FRONT_DESK','NURSE','DOCTOR','ER','ADMIN')">
           <a class="nav-link" th:href="@{/queue}" th:text="#{nav.queue}">Queue</a>
         </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('ER','ADMIN')">
+          <a class="nav-link" th:href="@{/er}" th:text="#{nav.er}">ER</a>
+        </li>
+        <li class="nav-item" sec:authorize="hasAnyRole('FRONT_DESK','NURSE','ER','ADMIN')">
+          <a class="nav-link" th:href="@{/notifications/call-list}" th:text="#{notification.nav.callList}">Staff call list</a>
+        </li>
         <li class="nav-item" sec:authorize="hasAnyRole('DOCTOR','NURSE','ADMIN')">
           <a class="nav-link" th:href="@{/consultations}" th:text="#{nav.consultations}">Consultations</a>
         </li>
@@ -49,6 +55,7 @@
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2">
+        <th:block th:replace="~{notification/fragments :: bell}"></th:block>
         <a class="btn btn-sm btn-outline-light" th:href="@{''(lang=en)}">EN</a>
         <a class="btn btn-sm btn-outline-light" th:href="@{''(lang=bn)}">বাংলা</a>
         <span class="text-white-50 small" sec:authorize="isAuthenticated()" sec:authentication="name"></span>

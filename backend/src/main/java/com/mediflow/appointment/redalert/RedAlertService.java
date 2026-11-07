@@ -48,6 +48,7 @@ public class RedAlertService {
   private final AuditPort audit;
   private final NotificationPort notifications;
   private final ClockPort clock;
+  private final RedAlertMetrics metrics;
 
   public RedAlertService(
       ApptRedAlertRepository alerts,
@@ -60,7 +61,8 @@ public class RedAlertService {
       ApplicationEventPublisher events,
       AuditPort audit,
       NotificationPort notifications,
-      ClockPort clock) {
+      ClockPort clock,
+      RedAlertMetrics metrics) {
     this.alerts = alerts;
     this.appointments = appointments;
     this.encounters = encounters;
@@ -72,6 +74,7 @@ public class RedAlertService {
     this.audit = audit;
     this.notifications = notifications;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   /**
@@ -139,6 +142,7 @@ public class RedAlertService {
     events.publishEvent(
         new DomainEvents.RedAlertRaised(
             alert.getId(), appt.getPatientId(), appt.getHospitalId(), TriageLevel.CRITICAL, now));
+    metrics.onRaised(alert);
     return alert;
   }
 
@@ -235,6 +239,7 @@ public class RedAlertService {
     }
     alerts.save(alert);
     alerts.updateExt(alert.getId(), null, null, actor, actor, now, trimToNull(note));
+    metrics.onClosed();
     audit.record(
         actor,
         alert.getPatientId(),

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body>
+<nav th:replace="~{layout/base :: nav}"></nav>
+<main class="container pb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <p><a th:href="@{/pharmacy}">&larr; Pharmacy</a></p>
+  <h1 class="h3" th:text="#{pharmacy.dictionary.title}">Dictionary</h1>
+
+  <form class="row g-2 mb-4" th:action="@{/pharmacy/dictionary/import}" method="post" enctype="multipart/form-data">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <div class="col-md-4">
+      <label class="form-label" th:text="#{pharmacy.dictionary.upload}">CSV</label>
+      <input class="form-control" type="file" name="file" accept=".csv,text/csv" required/>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" th:text="#{pharmacy.dictionary.sourceLabel}">Label</label>
+      <input class="form-control" name="sourceLabel" value="DGDA register"/>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn btn-primary w-100" type="submit" th:text="#{pharmacy.dictionary.upload}">Import</button>
+    </div>
+  </form>
+
+  <form class="row g-2 mb-4" method="get" th:action="@{/pharmacy/dictionary}">
+    <div class="col-md-6">
+      <label class="form-label" th:text="#{pharmacy.dictionary.search}">Search</label>
+      <input class="form-control" name="q" th:value="${query}"/>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn btn-outline-secondary w-100" type="submit">Search</button>
+    </div>
+  </form>
+
+  <div th:if="${exact != null}" class="mb-3">
+    <h2 class="h6" th:text="#{pharmacy.dictionary.exact}">Exact</h2>
+    <p th:text="|${exact.name()} (${exact.atcCode()})|"></p>
+  </div>
+  <div th:if="${brands != null and !#lists.isEmpty(brands)}" class="mb-3">
+    <h2 class="h6" th:text="#{pharmacy.dictionary.brands}">Brands</h2>
+    <ul>
+      <li th:each="b : ${brands}"
+          th:text="|${b.brandName()} ${b.strength()} → ${b.genericName()}|"></li>
+    </ul>
+  </div>
+  <div th:if="${suggestions != null and !#lists.isEmpty(suggestions)}" class="mb-3">
+    <h2 class="h6" th:text="#{pharmacy.dictionary.suggest}">Suggest</h2>
+    <ul>
+      <li th:each="s : ${suggestions}"
+          th:text="|${s.brandName() != null ? s.brandName() : s.genericName()} (${s.score()})|"></li>
+    </ul>
+  </div>
+
+  <h2 class="h5" th:text="#{pharmacy.dictionary.imports}">Imports</h2>
+  <table class="table table-sm">
+    <thead><tr><th>v</th><th>Label</th><th>Rows</th><th>Unmapped</th><th></th></tr></thead>
+    <tbody>
+    <tr th:each="i : ${imports}">
+      <td th:text="${i.importVersion}">1</td>
+      <td th:text="${i.sourceLabel}">DGDA</td>
+      <td th:text="${i.totalRows}">0</td>
+      <td th:text="${i.unmappedRows}">0</td>
+      <td><a th:href="@{/pharmacy/dictionary/imports/{id}/unmapped(id=${i.id})}" th:text="#{pharmacy.dictionary.unmapped}">Unmapped</a></td>
+    </tr>
+    </tbody>
+  </table>
+
+  <pre th:if="${unmappedReport != null and !#strings.isEmpty(unmappedReport)}" class="bg-light p-2 small"
+       th:text="${unmappedReport}"></pre>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

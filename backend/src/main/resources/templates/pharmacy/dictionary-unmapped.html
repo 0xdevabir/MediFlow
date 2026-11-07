@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body>
+<nav th:replace="~{layout/base :: nav}"></nav>
+<main class="container pb-5">
+  <p><a th:href="@{/pharmacy/dictionary}">&larr; Dictionary</a></p>
+  <h1 class="h3" th:text="#{pharmacy.dictionary.unmapped}">Unmapped</h1>
+  <pre class="bg-light p-3 small" th:text="${unmappedReport}"> </pre>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

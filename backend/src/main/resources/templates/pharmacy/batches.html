@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body>
+<nav th:replace="~{layout/base :: nav}"></nav>
+<main class="container pb-5">
+  <p><a th:href="@{/pharmacy/rx/{id}(id=${rxId})}">&larr; Dispense</a></p>
+  <h1 class="h3" th:text="#{pharmacy.stock.batches}">Batches</h1>
+  <table class="table table-sm">
+    <thead><tr><th>Batch ID</th><th>No</th><th>Expiry</th><th>Qty</th></tr></thead>
+    <tbody>
+    <tr th:each="b : ${batches}">
+      <td class="font-monospace small" th:text="${b.batchId()}">id</td>
+      <td th:text="${b.batchNo()}">B1</td>
+      <td th:text="${b.expiryDate()}">2027-01-01</td>
+      <td th:text="${b.quantity()}">10</td>
+    </tr>
+    </tbody>
+  </table>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

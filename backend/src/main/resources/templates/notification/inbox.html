@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('notification.inbox.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0" th:text="#{notification.inbox.title}">Notifications</h1>
+    <form th:action="@{/notifications/read-all}" method="post" th:if="${!rows.isEmpty()}">
+      <button class="btn btn-sm btn-outline-secondary" type="submit" th:text="#{notification.inbox.markAllRead}">Mark all read</button>
+    </form>
+  </div>
+  <ul th:replace="~{notification/fragments :: subnav('inbox')}"></ul>
+  <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{notification.inbox.empty}">You have no notifications.</p>
+  <div class="list-group" th:unless="${rows.isEmpty()}">
+    <div class="list-group-item" th:each="row : ${rows}" th:classappend="${row.unread} ? 'list-group-item-light border-start border-4 border-primary'">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="fw-semibold">
+            <span th:if="${row.high}" class="badge bg-danger me-1" th:text="#{notification.priority.HIGH}">Urgent</span>
+            <span th:if="${row.unread}" class="badge bg-primary me-1" th:text="#{notification.inbox.unread}">New</span>
+            <span th:text="${row.notification.subject}">Subject</span>
+          </div>
+          <div class="mt-1" style="white-space: pre-line" th:text="${row.notification.body}">Body</div>
+          <div class="small text-muted mt-1"
+               th:text="${@templateRenderer.formatInstant(row.notification.createdAt, #locale)}">7 Nov 2026</div>
+        </div>
+        <form th:if="${row.unread}" th:action="@{/notifications/{id}/read(id=${row.notification.id})}" method="post">
+          <button class="btn btn-sm btn-outline-primary" type="submit" th:text="#{notification.inbox.markRead}">Mark read</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

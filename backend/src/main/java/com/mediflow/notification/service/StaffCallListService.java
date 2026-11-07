@@ -70,7 +70,8 @@ public class StaffCallListService {
   @Transactional(readOnly = true)
   public List<CallRow> openEntries(UUID actorUserId) {
     List<CallRow> rows =
-        entries.findByStatusOrderByPriorityDescCreatedAtAsc(StaffCallStatus.OPEN).stream()
+        entries.findByStatusOrderByCreatedAtAsc(StaffCallStatus.OPEN).stream()
+            .sorted(java.util.Comparator.comparing((StaffCallEntry x) -> x.getPriority() != Priority.HIGH))
             .map(this::toRow)
             .toList();
     audit.record(

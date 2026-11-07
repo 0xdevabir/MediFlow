@@ -11,4 +11,6 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
   Optional<NotificationDelivery> findByNotificationId(UUID notificationId);
 
   List<NotificationDelivery> findByRootNotificationIdOrderByCreatedAtAsc(UUID rootNotificationId);
+
+  List<NotificationDelivery> findByNotificationIdIn(java.util.Collection<UUID> notificationIds);
 }

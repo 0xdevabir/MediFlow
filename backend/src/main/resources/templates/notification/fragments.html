@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!--/* Navbar bell (T10 request: include inside layout/base :: nav, e.g. before the EN/বাংলা buttons):
+       <th:block th:replace="~{notification/fragments :: bell}"></th:block> */-->
+<th:block th:fragment="bell">
+  <a sec:authorize="isAuthenticated()" class="btn btn-sm btn-outline-light position-relative"
+     th:href="@{/notifications}" th:with="unread=${@notificationInbox.unreadCount()}"
+     th:title="#{notification.bell.label}" th:attr="aria-label=#{notification.bell.label}" data-testid="notification-bell">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/>
+    </svg>
+    <span th:if="${unread > 0}" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          th:text="${unread > 99 ? '99+' : unread}">1</span>
+  </a>
+</th:block>
+
+<!--/* Adherence widget for the patient dashboard (T02 request):
+       <div th:replace="~{notification/fragments :: adherence}"></div> */-->
+<div th:fragment="adherence" class="card mb-3" sec:authorize="hasRole('PATIENT')"
+     th:with="pct=${@notificationAdherence.currentPercent()}">
+  <div class="card-body">
+    <h2 class="h6 card-title" th:text="#{notification.reminders.adherence}">Adherence</h2>
+    <div th:if="${pct != null}">
+      <div class="display-6" data-testid="adherence-percent" th:text="${pct} + '%'">90%</div>
+      <div class="progress mt-2" role="progressbar" th:attr="aria-valuenow=${pct}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar" th:classappend="${pct >= 80 ? 'bg-success' : (pct >= 50 ? 'bg-warning' : 'bg-danger')}"
+             th:style="'width: ' + ${pct} + '%'"></div>
+      </div>
+    </div>
+    <p th:if="${pct == null}" class="text-muted mb-0" th:text="#{notification.reminders.adherence.none}">No doses due yet</p>
+    <a class="small" th:href="@{/notifications/reminders}" th:text="#{notification.nav.reminders}">My reminders</a>
+  </div>
+</div>
+
+<!--/* Sub-navigation shared by the notification pages. */-->
+<ul th:fragment="subnav(active)" class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <a class="nav-link" th:classappend="${active == 'inbox'} ? 'active'" th:href="@{/notifications}" th:text="#{notification.inbox.title}">Notifications</a>
+  </li>
+  <li class="nav-item" sec:authorize="hasRole('PATIENT')">
+    <a class="nav-link" th:classappend="${active == 'reminders'} ? 'active'" th:href="@{/notifications/reminders}" th:text="#{notification.nav.reminders}">My reminders</a>
+  </li>
+  <li class="nav-item" sec:authorize="hasAnyRole('FRONT_DESK','NURSE','ER','ADMIN')">
+    <a class="nav-link" th:classappend="${active == 'callList'} ? 'active'" th:href="@{/notifications/call-list}" th:text="#{notification.nav.callList}">Staff call list</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" th:classappend="${active == 'prefs'} ? 'active'" th:href="@{/notifications/preferences}" th:text="#{notification.nav.preferences}">Preferences</a>
+  </li>
+</ul>
+
+</body>
+</html>

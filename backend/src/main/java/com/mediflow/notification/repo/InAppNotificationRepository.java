@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 public interface InAppNotificationRepository extends Repository<Notification, UUID> {
 
   @Query(
+      "select n from Notification n where n.id = :id and n.recipientUserId = :userId and n.channel = 'IN_APP'")
+  java.util.Optional<Notification> findOwnInApp(@Param("id") UUID id, @Param("userId") UUID userId);
+
+  @Query(
       "select n from Notification n where n.recipientUserId = :userId and n.channel = 'IN_APP'"
           + " order by n.createdAt desc")
   List<Notification> findInbox(@Param("userId") UUID userId, Pageable page);

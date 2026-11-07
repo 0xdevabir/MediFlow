@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StaffCallEntryRepository extends JpaRepository<StaffCallEntry, UUID> {
 
-  List<StaffCallEntry> findByStatusOrderByPriorityDescCreatedAtAsc(StaffCallStatus status);
+  List<StaffCallEntry> findByStatusOrderByCreatedAtAsc(StaffCallStatus status);
 
   Optional<StaffCallEntry> findFirstByRootNotificationIdAndStatus(
       UUID rootNotificationId, StaffCallStatus status);

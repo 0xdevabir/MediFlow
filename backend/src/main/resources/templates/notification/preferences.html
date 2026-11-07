@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('notification.prefs.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{notification.prefs.title}">Notification preferences</h1>
+  <ul th:replace="~{notification/fragments :: subnav('prefs')}"></ul>
+  <form th:action="@{/notifications/preferences}" method="post" class="card card-body" style="max-width: 36rem">
+    <fieldset class="mb-3">
+      <legend class="h6" th:text="#{notification.prefs.channels}">Channels</legend>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="sms" name="sms" value="true" th:checked="${pref.smsEnabled}"/>
+        <label class="form-check-label" for="sms" th:text="#{notification.prefs.sms}">SMS</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="email" name="email" value="true" th:checked="${pref.emailEnabled}"/>
+        <label class="form-check-label" for="email" th:text="#{notification.prefs.email}">Email</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="push" name="push" value="true" th:checked="${pref.pushEnabled}"/>
+        <label class="form-check-label" for="push" th:text="#{notification.prefs.push}">Push</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="inApp" name="inApp" value="true" th:checked="${pref.inAppEnabled}"/>
+        <label class="form-check-label" for="inApp" th:text="#{notification.prefs.inApp}">In-app</label>
+      </div>
+    </fieldset>
+    <fieldset class="mb-3">
+      <legend class="h6" th:text="#{notification.prefs.quietHours}">Quiet hours</legend>
+      <div class="row g-2">
+        <div class="col">
+          <label class="form-label small" for="quietStart" th:text="#{notification.prefs.quietStart}">From</label>
+          <input class="form-control" type="time" id="quietStart" name="quietStart" th:value="${pref.quietStart}"/>
+        </div>
+        <div class="col">
+          <label class="form-label small" for="quietEnd" th:text="#{notification.prefs.quietEnd}">To</label>
+          <input class="form-control" type="time" id="quietEnd" name="quietEnd" th:value="${pref.quietEnd}"/>
+        </div>
+      </div>
+    </fieldset>
+    <div class="mb-3">
+      <label class="form-label h6" for="locale" th:text="#{notification.prefs.language}">Language</label>
+      <select class="form-select" id="locale" name="locale">
+        <option value="en" th:selected="${pref.locale == null or pref.locale == 'en'}" th:text="#{notification.prefs.language.en}">English</option>
+        <option value="bn" th:selected="${pref.locale == 'bn'}" th:text="#{notification.prefs.language.bn}">Bangla</option>
+      </select>
+    </div>
+    <div><button class="btn btn-primary" type="submit" th:text="#{notification.prefs.save}">Save</button></div>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

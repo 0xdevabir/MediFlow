@@ -52,8 +52,7 @@ public class AppointmentController {
     this.clock = clock;
   }
 
-  /** Exact `/appointments` is still claimed by T00's placeholder; nav is forwarded here. */
-  @GetMapping("/home")
+  @GetMapping({"", "/", "/home"})
   public String index(Model model) {
     if (currentUser.hasRole("PATIENT")) {
       model.addAttribute("appointments", booking.myAppointments());

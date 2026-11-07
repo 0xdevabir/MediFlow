@@ -18,7 +18,7 @@ public class PrescriptionItem extends BaseEntity {
   @Column(name = "brand_id")
   private UUID brandId;
 
-  @Column(name = "generic_id", nullable = false)
+  @Column(name = "generic_id")
   private UUID genericId;
 
   @Column(name = "dose")

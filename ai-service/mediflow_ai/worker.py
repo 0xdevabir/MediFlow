@@ -16,9 +16,17 @@ from aio_pika import ExchangeType, IncomingMessage, Message, DeliveryMode
 from .config import Settings
 from .contract import DLQ, REQUEST_QUEUE, RESULT_QUEUE, JobResult, PoisonMessage, Status, parse_request
 from .metrics import observe_result
+from prometheus_client import start_http_server
+import os
 from .pipeline import Pipeline, MODEL_VERSION
 
 log = logging.getLogger("mediflow_ai.worker")
+
+def _maybe_start_metrics() -> None:
+    port = int(os.environ.get("MEDIFLOW_AI_METRICS_PORT", "9102"))
+    if port > 0:
+        start_http_server(port)
+        log.info("AI worker metrics on :%s", port)
 
 
 async def run_worker(settings: Settings, pipeline: Pipeline) -> None:

@@ -1,6 +1,6 @@
 package com.mediflow.directory.service;
 
-import com.mediflow.directory.event.PractitionerScheduleChanged;
+import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.directory.repo.DirectoryJdbc;
 import com.mediflow.directory.schedule.WeeklySchedule;
 import com.mediflow.shared.domain.Department;
@@ -32,7 +32,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** ADMIN-only directory CRUD. Schedule edits publish {@link PractitionerScheduleChanged}. */
+/** ADMIN-only directory CRUD. Schedule edits publish {@link DomainEvents.PractitionerScheduleChanged}. */
 @Service
 @PreAuthorize("hasRole('ADMIN')")
 public class DirectoryAdminService {
@@ -210,7 +210,7 @@ public class DirectoryAdminService {
         !Objects.equals(previousSchedule, canonical) || previouslyActive != active;
     if (scheduleChanged) {
       events.publishEvent(
-          new PractitionerScheduleChanged(
+          new DomainEvents.PractitionerScheduleChanged(
               role.getId(),
               role.getPractitionerId(),
               role.getHospitalId(),

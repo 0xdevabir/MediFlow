@@ -47,7 +47,7 @@ public class QueueController {
   }
 
   /** Prefer `/queue/home` — exact `/queue` is still claimed by T00's placeholder. */
-  @GetMapping("/home")
+  @GetMapping({"", "/", "/home"})
   public String index(
       @RequestParam(required = false) UUID doctorId,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

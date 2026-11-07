@@ -118,6 +118,13 @@ public class BookingService {
     String note = oldMeta == null ? null : oldMeta.getEmergencyNote();
     Appointment fresh = book(old.getPatientId(), newSlotId, flag, note, old.getId());
     cancelInternal(old, "RESCHEDULED");
+    Instant newStart =
+        fresh.getSlotId() == null
+            ? clock.now()
+            : slots.findById(fresh.getSlotId()).map(s -> s.getStartsAt()).orElse(clock.now());
+    events.publishEvent(
+        new DomainEvents.ScheduleChanged(
+            fresh.getId(), fresh.getPatientId(), newStart, clock.now()));
     return fresh;
   }
 

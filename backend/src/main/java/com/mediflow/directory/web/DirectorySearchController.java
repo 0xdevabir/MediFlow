@@ -23,7 +23,7 @@ public class DirectorySearchController {
     this.queries = queries;
   }
 
-  @GetMapping({"/search"})
+  @GetMapping({"", "/", "/search"})
   public String search(
       @RequestParam(required = false) String q,
       @RequestParam(required = false) UUID hospitalId,

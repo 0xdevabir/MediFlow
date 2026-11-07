@@ -15,6 +15,7 @@ import com.mediflow.shared.domain.QueueEntry;
 import com.mediflow.shared.domain.QueueStatus;
 import com.mediflow.shared.domain.TriageLevel;
 import com.mediflow.shared.domain.VitalClass;
+import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
 import com.mediflow.shared.web.CurrentUser;
@@ -164,6 +165,9 @@ public class QueueService {
         "QueueEntry",
         entry.getId(),
         Map.of("tokenNo", entry.getTokenNo(), "doctorId", effectiveDoctor.toString()));
+    events.publishEvent(
+        new DomainEvents.QueueCalled(
+            appt.getId(), appt.getPatientId(), entry.getTokenNo(), clock.now()));
     notifyChanged(effectiveDoctor, day);
     return statusForAppointment(appt.getId());
   }

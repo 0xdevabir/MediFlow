@@ -18,7 +18,7 @@ public class LabHomeController {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @GetMapping({"/home", "/index"})
+  @GetMapping({"", "/", "/home", "/index"})
   public String home(Model model) {
     model.addAttribute("isPatient", currentUser.hasRole("PATIENT"));
     model.addAttribute("isLabTech", currentUser.hasRole("LAB_TECH"));

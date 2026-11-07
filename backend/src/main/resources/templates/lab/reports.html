@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('lab.reports.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-3" th:text="#{lab.reports.title}">My lab reports</h1>
+  <p th:if="${orders.isEmpty()}" class="text-muted" th:text="#{lab.reports.empty}">No orders.</p>
+  <div class="table-responsive" th:unless="${orders.isEmpty()}">
+    <table class="table table-sm align-middle">
+      <thead>
+      <tr>
+        <th th:text="#{lab.reports.item}">Item</th>
+        <th th:text="#{lab.reports.status}">Status</th>
+        <th th:text="#{lab.reports.ordered}">Ordered</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="o : ${orders}">
+        <td th:text="${o.itemName()}">Test</td>
+        <td>
+          <span th:text="${o.status()}">ORDERED</span>
+          <span th:if="${o.released() and o.abnormal()}" class="badge bg-warning text-dark ms-1" th:text="#{lab.reports.abnormal}">Abnormal</span>
+          <span th:if="${o.released() and o.critical()}" class="badge bg-danger ms-1" th:text="#{lab.reports.critical}">Critical</span>
+        </td>
+        <td th:text="${o.orderedAt()}">—</td>
+        <td><a class="btn btn-sm btn-outline-primary" th:href="@{/lab/reports/{id}(id=${o.orderId()})}" th:text="#{lab.reports.view}">View</a></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

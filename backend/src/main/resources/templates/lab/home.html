@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('lab.home.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-2" th:text="#{lab.home.title}">Laboratory</h1>
+  <p class="text-muted mb-4" th:text="#{lab.home.intro}">Book direct tests, view reports, or work the lab queue.</p>
+  <div class="list-group">
+    <a th:if="${isPatient or isFrontDesk}" class="list-group-item list-group-item-action" th:href="@{/lab/direct}" th:text="#{lab.home.direct}">Book a direct test</a>
+    <a th:if="${isPatient}" class="list-group-item list-group-item-action" th:href="@{/lab/reports}" th:text="#{lab.home.reports}">My lab reports</a>
+    <a th:if="${isLabTech}" class="list-group-item list-group-item-action" th:href="@{/lab/queue}" th:text="#{lab.home.queue}">Lab tech queue</a>
+    <a th:if="${isDoctor}" class="list-group-item list-group-item-action" th:href="@{/lab/home}" th:text="#{lab.home.doctor}">Order tests for encounter</a>
+  </div>
+  <p th:if="${isDoctor}" class="small text-muted mt-3">Doctor orders: open <code>/lab/encounters/{encounterId}/orders</code> from the consultation.</p>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

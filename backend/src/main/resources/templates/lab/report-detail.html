@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('lab.reports.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-2" th:text="${report.order().itemName()}">Report</h1>
+  <p class="text-muted">
+    <span th:text="${report.order().status()}">STATUS</span>
+    <span th:if="${report.released()}" class="ms-2">
+      <span th:text="#{lab.reports.verifiedAt}">Verified</span>:
+      <span th:text="${report.verifiedAt()}">—</span>
+    </span>
+  </p>
+
+  <div th:if="${!report.released()}" class="alert alert-info" th:text="#{lab.reports.pendingVerify}">Waiting for verification.</div>
+
+  <div th:if="${showSeeDoctor}" class="alert alert-warning">
+    <p class="mb-2" th:text="#{lab.reports.seeDoctor}">Please see a doctor.</p>
+    <a class="btn btn-sm btn-warning" th:href="@{/appointments}" th:text="#{lab.reports.bookDoctor}">Book</a>
+  </div>
+
+  <div th:if="${report.released()}">
+    <p th:if="${report.summary() != null}">
+      <strong th:text="#{lab.reports.summary}">Summary</strong>:
+      <span th:text="${report.summary()}"></span>
+    </p>
+    <p th:if="${report.hasPdf()}" class="small" th:text="#{lab.reports.pdf}">PDF on file</p>
+
+    <h2 class="h5 mt-4" th:text="#{lab.reports.values}">Results</h2>
+    <table class="table table-sm" th:if="${!report.values().isEmpty()}">
+      <thead>
+      <tr>
+        <th>Analyte</th>
+        <th th:text="#{lab.tech.value}">Value</th>
+        <th th:text="#{lab.reports.ref}">Reference</th>
+        <th th:text="#{lab.reports.flag}">Flag</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="v : ${report.values()}">
+        <td>
+          <span th:text="${v.analyteName}">Name</span>
+          <span class="small text-muted" th:if="${v.loincCode != null}" th:text="'('+${v.loincCode}+')'"></span>
+        </td>
+        <td>
+          <span th:text="${v.valueNumeric != null ? v.valueNumeric : v.valueText}">—</span>
+          <span class="small" th:text="${v.ucumUnit}"></span>
+        </td>
+        <td>
+          <span th:text="${v.refLow}"></span>
+          <span>–</span>
+          <span th:text="${v.refHigh}"></span>
+        </td>
+        <td th:text="${v.flag}">NORMAL</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3"><a th:href="@{/lab/reports}" th:text="#{lab.reports.title}">Back</a></p>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

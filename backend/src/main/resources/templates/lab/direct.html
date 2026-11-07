@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('lab.direct.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <h1 class="h3 mb-2" th:text="#{lab.direct.title}">Direct lab test</h1>
+  <p class="text-muted" th:text="#{lab.direct.intro}">Choose from the approved list.</p>
+
+  <form class="mb-4" method="get" th:action="@{/lab/direct}">
+    <label class="form-label" th:text="#{lab.direct.hospital}">Hospital</label>
+    <div class="input-group" style="max-width: 28rem">
+      <select class="form-select" name="hospitalId" onchange="this.form.submit()">
+        <option value="">—</option>
+        <option th:each="h : ${hospitals}" th:value="${h.id}" th:text="${h.name}"
+                th:selected="${hospitalId != null and hospitalId == h.id}"></option>
+      </select>
+    </div>
+  </form>
+
+  <form th:if="${hospitalId != null}" method="post" th:action="@{/lab/direct}" class="vstack gap-3">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" name="hospitalId" th:value="${hospitalId}"/>
+
+    <div th:if="${isFrontDesk}">
+      <label class="form-label" th:text="#{lab.direct.mrn}">Patient MRN</label>
+      <input class="form-control" style="max-width: 16rem" name="mrn" required/>
+    </div>
+
+    <fieldset>
+      <legend class="h6" th:text="#{lab.direct.tests}">Tests</legend>
+      <div class="form-check" th:each="item : ${catalog}" th:if="${!item.pkg()}">
+        <input class="form-check-input" type="checkbox" name="testIds" th:value="${item.id()}" th:id="'t-'+${item.id()}"/>
+        <label class="form-check-label" th:for="'t-'+${item.id()}">
+          <span th:text="${item.name()}">Test</span>
+          <span class="text-muted">—</span>
+          <span th:text="${item.price()}">0</span>
+          <span th:text="#{lab.direct.price}">BDT</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend class="h6" th:text="#{lab.direct.packages}">Packages</legend>
+      <div class="form-check" th:each="item : ${catalog}" th:if="${item.pkg()}">
+        <input class="form-check-input" type="checkbox" name="packageIds" th:value="${item.id()}" th:id="'p-'+${item.id()}"/>
+        <label class="form-check-label" th:for="'p-'+${item.id()}">
+          <span th:text="${item.name()}">Package</span>
+          <span class="text-muted">—</span>
+          <span th:text="${item.price()}">0</span>
+          <div class="small text-muted" th:if="${!item.includes().isEmpty()}">
+            <span th:text="#{lab.direct.includes}">Includes</span>:
+            <span th:text="${#strings.listJoin(item.includes(), ', ')}"></span>
+          </div>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="row g-3" style="max-width: 32rem">
+      <div class="col-md-6">
+        <label class="form-label" th:text="#{lab.direct.date}">Date</label>
+        <input class="form-control" type="date" name="date" required th:min="${today}" th:max="${maxDate}"/>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" th:text="#{lab.direct.slot}">Slot</label>
+        <select class="form-select" name="slot" required>
+          <option th:each="s : ${slots}" th:value="${s}" th:text="${s}"></option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary align-self-start" type="submit" th:text="#{lab.direct.submit}">Book</button>
+  </form>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

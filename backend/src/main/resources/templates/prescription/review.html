@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('rx.title.review')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0" th:text="#{rx.title.review}">Review</h1>
+    <span class="badge text-bg-secondary" th:text="${rx.status}">DRAFT</span>
+  </div>
+
+  <div id="aiBanner" class="alert alert-info d-none" role="status"
+       th:text="#{rx.review.ai_waiting}">Waiting for AI…</div>
+  <div id="aiManualBanner" class="alert alert-warning d-none" role="status"
+       th:text="#{rx.review.ai_manual}">Manual</div>
+
+  <div class="row g-4">
+    <div class="col-md-4" th:if="${meta.photoObjectKey != null}">
+      <h2 class="h6" th:text="#{rx.review.photo}">Photo</h2>
+      <p class="small text-muted" th:text="${meta.photoObjectKey}">key</p>
+    </div>
+    <div class="col-md-8">
+      <h2 class="h6" th:text="#{rx.review.items}">Items</h2>
+      <div class="list-group mb-3" th:each="item : ${items}">
+        <div class="list-group-item"
+             th:classappend="${itemMetas[item.id] != null and (itemMetas[item.id].gateStatus.name() == 'NEEDS_REVIEW' or itemMetas[item.id].gateStatus.name() == 'UNKNOWN')} ? ' border-warning' : (${itemMetas[item.id] != null and itemMetas[item.id].gateStatus.name() == 'HARD_STOP'} ? ' border-danger' : '')">
+          <div class="d-flex justify-content-between">
+            <strong th:text="${item.rawText}">Brand</strong>
+            <span class="badge text-bg-light"
+                  th:if="${itemMetas[item.id] != null}"
+                  th:text="${itemMetas[item.id].gateStatus}">GATE</span>
+          </div>
+          <div class="small text-muted"
+               th:if="${itemMetas[item.id] != null and itemMetas[item.id].source.name() == 'AI'}">
+            <span th:text="#{rx.review.ai_guess}">AI</span>:
+            <span th:text="${itemMetas[item.id].aiBrand}">brand</span>
+            <span th:text="${itemMetas[item.id].aiDose}">dose</span>
+            <span th:text="${itemMetas[item.id].aiFrequency}">freq</span>
+          </div>
+          <div th:text="${item.dose} + ' · ' + ${item.frequency} + ' · ' + ${item.duration}">dose</div>
+          <div class="mt-2" th:if="${isDraft}" sec:authorize="hasRole('DOCTOR')">
+            <form class="row g-1" th:action="@{|/prescriptions/${rx.id}/items/${item.id}/update|}" method="post">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <div class="col-md-3"><input class="form-control form-control-sm" name="brandQuery" th:value="${item.rawText}" th:placeholder="#{rx.review.brand}"/></div>
+              <div class="col-md-2"><input class="form-control form-control-sm" name="dose" th:value="${item.dose}" th:placeholder="#{rx.review.dose}"/></div>
+              <div class="col-md-2"><input class="form-control form-control-sm" name="frequency" th:value="${item.frequency}" th:placeholder="#{rx.review.frequency}"/></div>
+              <div class="col-md-2"><input class="form-control form-control-sm" name="duration" th:value="${item.duration}" th:placeholder="#{rx.review.duration}"/></div>
+              <div class="col-auto"><button class="btn btn-sm btn-outline-primary" type="submit" th:text="#{rx.review.update}">Save</button></div>
+            </form>
+            <form class="d-inline" th:action="@{|/prescriptions/${rx.id}/items/${item.id}/confirm|}" method="post">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn btn-sm btn-success" type="submit" th:text="#{rx.review.confirm}">Confirm</button>
+            </form>
+            <form class="d-inline" th:action="@{|/prescriptions/${rx.id}/items/${item.id}/delete|}" method="post">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button class="btn btn-sm btn-outline-danger" type="submit" th:text="#{rx.review.delete}">Remove</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div th:if="${isDraft}" sec:authorize="hasRole('DOCTOR')">
+        <h2 class="h6" th:text="#{rx.review.add_item}">Add</h2>
+        <form class="row g-2 mb-4" th:action="@{|/prescriptions/${rx.id}/items|}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="col-md-3"><input class="form-control" name="brandQuery" required th:placeholder="#{rx.review.brand}"/></div>
+          <div class="col-md-2"><input class="form-control" name="dose" required th:placeholder="#{rx.review.dose}"/></div>
+          <div class="col-md-2"><input class="form-control" name="route" th:placeholder="#{rx.review.route}"/></div>
+          <div class="col-md-2"><input class="form-control" name="frequency" required th:placeholder="#{rx.review.frequency}"/></div>
+          <div class="col-md-2"><input class="form-control" name="duration" th:placeholder="#{rx.review.duration}"/></div>
+          <div class="col-auto"><button class="btn btn-primary" type="submit" th:text="#{rx.review.add_item}">Add</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="h6" th:text="#{rx.review.flags}">Flags</h2>
+  <ul class="list-group mb-4">
+    <li class="list-group-item" th:each="f : ${flags}"
+        th:classappend="${f.severity.name() == 'CRITICAL'} ? ' list-group-item-danger' : (${f.severity.name() == 'WARNING'} ? ' list-group-item-warning' : '')">
+      <strong th:text="#{__${f.messageKey}__}">flag</strong>
+      <span class="small text-muted" th:text="${f.detail}">detail</span>
+      <form class="row g-1 mt-1" th:if="${isDraft and f.overridable}" th:action="@{|/prescriptions/${rx.id}/flags/ack|}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="hidden" name="itemId" th:value="${f.itemId}"/>
+        <input type="hidden" name="fingerprint" th:value="${f.fingerprint}"/>
+        <div class="col-md-6"><input class="form-control form-control-sm" name="reason" required th:placeholder="#{rx.review.reason}"/></div>
+        <div class="col-auto form-check" th:if="${f.severity.name() == 'CRITICAL'}">
+          <input class="form-check-input" type="checkbox" name="secondConfirm" value="true" id="sec"/>
+          <label class="form-check-label small" for="sec" th:text="#{rx.review.second}">Second</label>
+        </div>
+        <div class="col-auto"><button class="btn btn-sm btn-outline-dark" type="submit" th:text="#{rx.review.ack}">Ack</button></div>
+      </form>
+    </li>
+  </ul>
+
+  <div class="d-flex flex-wrap gap-2" th:if="${isDraft}" sec:authorize="hasRole('DOCTOR')">
+    <button class="btn btn-outline-secondary" type="button" id="runAiBtn"
+            th:attr="data-rx-id=${rx.id}"
+            th:disabled="${meta.inputMode.name() == 'MANUAL'}"
+            th:text="#{rx.review.run_ai}">AI</button>
+    <form th:action="@{|/prescriptions/${rx.id}/sign|}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <button class="btn btn-success" type="submit" th:text="#{rx.review.sign}">Sign</button>
+    </form>
+  </div>
+
+  <div class="mt-4" th:if="${!isDraft}" sec:authorize="hasRole('DOCTOR')">
+    <a class="btn btn-outline-primary" th:href="@{|/prescriptions/${rx.id}/copy|}" th:text="#{rx.copy.title}">Copy</a>
+    <form class="d-inline" th:action="@{|/prescriptions/${rx.id}/addendum|}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <button class="btn btn-outline-secondary" type="submit" th:text="#{rx.review.addendum}">Addendum</button>
+    </form>
+    <form class="row g-2 mt-2" th:action="@{|/prescriptions/${rx.id}/revoke|}" method="post" style="max-width: 28rem"
+          th:if="${rx.status.name() == 'SIGNED' or rx.status.name() == 'AMENDED'}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="col"><input class="form-control" name="reason" required th:placeholder="#{rx.review.reason}"/></div>
+      <div class="col-auto"><button class="btn btn-danger" type="submit" th:text="#{rx.review.revoke}">Revoke</button></div>
+    </form>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+<script th:src="@{/js/prescription/ai-job.js}"></script>
+</body>
+</html>

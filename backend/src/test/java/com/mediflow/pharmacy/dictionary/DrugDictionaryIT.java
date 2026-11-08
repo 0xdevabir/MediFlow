@@ -3,6 +3,8 @@ package com.mediflow.pharmacy.dictionary;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.mediflow.shared.port.DrugDictionaryPort;
+import com.mediflow.shared.port.DrugDictionaryPort.GenericRef;
 import com.mediflow.support.AbstractIntegrationTest;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,12 +14,13 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Acceptance: two brands of the same generic resolve to that generic; unknown brand → empty (never
- * guessed).
+ * guessed). Bean under test is {@link DrugDictionaryService} for pharmacy helpers and shared port.
  */
 @ActiveProfiles({"test", "dev"})
 class DrugDictionaryIT extends AbstractIntegrationTest {
 
-  @Autowired DrugDictionaryPort dictionary;
+  @Autowired DrugDictionaryService dictionary;
+  @Autowired DrugDictionaryPort sharedPort;
 
   @Test
   void napaAndAceResolveToParacetamol() {
@@ -48,5 +51,12 @@ class DrugDictionaryIT extends AbstractIntegrationTest {
     var brands = dictionary.brandsOfGeneric(genericId);
     assertTrue(brands.stream().anyMatch(b -> "Napa".equalsIgnoreCase(b.brandName())));
     assertTrue(brands.stream().anyMatch(b -> "Ace".equalsIgnoreCase(b.brandName())));
+  }
+
+  @Test
+  void sharedPortBeanIsDrugDictionaryService() {
+    assertTrue(sharedPort instanceof DrugDictionaryService);
+    assertEquals(
+        dictionary.findBrandProducts("Napa").size(), sharedPort.findBrandProducts("Napa").size());
   }
 }

@@ -2,8 +2,8 @@ package com.mediflow.pharmacy.web;
 
 import com.mediflow.pharmacy.dictionary.DrugDictionaryService;
 import com.mediflow.pharmacy.dictionary.DrugDictionaryService.DictionarySnapshot;
-import com.mediflow.pharmacy.dictionary.DrugMatch;
-import com.mediflow.pharmacy.dictionary.GenericRef;
+import com.mediflow.shared.port.DrugDictionaryPort.DrugMatch;
+import com.mediflow.shared.port.DrugDictionaryPort.GenericRef;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.MediaType;
@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Service-to-service export for T09's matcher. Auth is the internal key filter on {@code
  * /api/internal/dictionary/**} (see {@code PharmacyInternalSecurityConfig}).
+ *
+ * <p>JSON field names ({@code atcCode}, {@code rxnormCode}, {@code illustrative}) stay stable for
+ * the AI hourly refresh contract.
  */
 @RestController
 @RequestMapping("/api/internal/dictionary")
@@ -54,10 +57,9 @@ public class DictionaryExportController {
     m.put("dgdaRegNo", b.dgdaRegNo());
     m.put("genericId", b.genericId());
     m.put("genericName", b.genericName());
-    m.put("atcCode", b.atcCode());
-    m.put("rxnormCode", b.rxnormCode());
+    m.put("atcCode", b.atc());
+    m.put("rxnormCode", b.rxnorm());
     m.put("illustrative", b.illustrative());
     return m;
   }
 }
-

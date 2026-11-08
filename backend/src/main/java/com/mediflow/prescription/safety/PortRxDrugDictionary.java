@@ -50,6 +50,9 @@ public class PortRxDrugDictionary implements RxDrugDictionary {
     if (local != null) {
       return local.findBrand(brandId).map(PortRxDrugDictionary::toBrand);
     }
+    if (brands == null) {
+      return Optional.empty();
+    }
     return brands.findById(brandId).map(PortRxDrugDictionary::toBrandFromEntity);
   }
 

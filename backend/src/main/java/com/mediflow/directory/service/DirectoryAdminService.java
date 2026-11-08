@@ -1,5 +1,6 @@
 package com.mediflow.directory.service;
 
+import com.mediflow.directory.event.DirectoryScheduleChangeDetail;
 import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.directory.repo.DirectoryJdbc;
 import com.mediflow.directory.schedule.WeeklySchedule;
@@ -21,6 +22,7 @@ import com.mediflow.shared.repo.PractitionerRepository;
 import com.mediflow.shared.repo.PractitionerRoleEntityRepository;
 import com.mediflow.shared.web.CurrentUser;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -209,13 +211,26 @@ public class DirectoryAdminService {
     boolean scheduleChanged =
         !Objects.equals(previousSchedule, canonical) || previouslyActive != active;
     if (scheduleChanged) {
+      Instant at = clock.now();
       events.publishEvent(
           new DomainEvents.PractitionerScheduleChanged(
               role.getId(),
               role.getPractitionerId(),
               role.getHospitalId(),
               result.affectedBookedSlotIds(),
-              clock.now()));
+              at));
+      events.publishEvent(
+          new DirectoryScheduleChangeDetail(
+              role.getId(),
+              role.getPractitionerId(),
+              role.getHospitalId(),
+              result.affectedBookedSlotIds(),
+              result.created(),
+              result.updated(),
+              result.removed(),
+              result.closed(),
+              previouslyActive && !active,
+              at));
     }
     audit(
         "DIRECTORY_ROLE_SAVE",
@@ -224,18 +239,52 @@ public class DirectoryAdminService {
         Map.of(
             "active", active,
             "slotsCreated", result.created(),
+            "slotsUpdated", result.updated(),
+            "slotsRemoved", result.removed(),
+            "slotsClosed", result.closed(),
             "affectedBooked", result.affectedBookedSlotIds().size()));
     return role;
   }
 
   @Transactional
   public SlotGenerationService.Result reconcileRole(UUID roleId) {
-    SlotGenerationService.Result result = slots.reconcile(roleId);
+    PractitionerRoleEntity role = roles.findById(roleId).orElseThrow(this::notFound);
+    SlotGenerationService.Result result = slots.reconcile(role);
+    Instant at = clock.now();
+    if (!result.affectedBookedSlotIds().isEmpty()
+        || result.created() > 0
+        || result.removed() > 0
+        || result.closed() > 0) {
+      events.publishEvent(
+          new DomainEvents.PractitionerScheduleChanged(
+              role.getId(),
+              role.getPractitionerId(),
+              role.getHospitalId(),
+              result.affectedBookedSlotIds(),
+              at));
+      events.publishEvent(
+          new DirectoryScheduleChangeDetail(
+              role.getId(),
+              role.getPractitionerId(),
+              role.getHospitalId(),
+              result.affectedBookedSlotIds(),
+              result.created(),
+              result.updated(),
+              result.removed(),
+              result.closed(),
+              !role.getActive(),
+              at));
+    }
     audit(
         "DIRECTORY_SLOTS_RECONCILE",
         "practitioner_role",
         roleId,
-        Map.of("created", result.created()));
+        Map.of(
+            "created", result.created(),
+            "updated", result.updated(),
+            "removed", result.removed(),
+            "closed", result.closed(),
+            "affectedBooked", result.affectedBookedSlotIds().size()));
     return result;
   }
 

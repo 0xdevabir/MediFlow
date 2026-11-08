@@ -31,6 +31,13 @@ class DirectorySearchIT extends AbstractIntegrationTest {
   }
 
   @Test
+  void specialtyFilterIsPublic() throws Exception {
+    mvc.perform(get("/directory/search").param("specialty", "Cardiology"))
+        .andExpect(status().isOk())
+        .andExpect(view().name("directory/search"));
+  }
+
+  @Test
   void adminIndexRequiresAdmin() throws Exception {
     mvc.perform(get("/directory/admin")).andExpect(status().is3xxRedirection());
     mvc.perform(get("/directory/admin").with(user("doctor").roles("DOCTOR")))

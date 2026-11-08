@@ -18,7 +18,6 @@ import com.mediflow.shared.domain.TriageLevel;
 import com.mediflow.shared.domain.VitalClass;
 import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
-import com.mediflow.appointment.redalert.RedAlertMetrics;
 import com.mediflow.shared.port.NotificationPort;
 import com.mediflow.shared.web.CurrentUser;
 import java.time.Instant;
@@ -39,6 +38,7 @@ class CriticalLeavesOpdTest {
   @Mock ApptEncounterRepository encounters;
   @Mock ApptPatientRepository patients;
   @Mock ApptUserRepository users;
+  @Mock ErStaffQueries erStaff;
   @Mock QueueService queueService;
   @Mock CurrentUser currentUser;
   @Mock ApplicationEventPublisher events;
@@ -56,6 +56,7 @@ class CriticalLeavesOpdTest {
             encounters,
             patients,
             users,
+            erStaff,
             queueService,
             currentUser,
             events,
@@ -77,12 +78,15 @@ class CriticalLeavesOpdTest {
     when(clock.now()).thenReturn(Instant.parse("2026-11-07T10:00:00Z"));
     when(currentUser.userId()).thenReturn(Optional.empty());
     when(currentUser.hasRole("ER")).thenReturn(false);
+    when(erStaff.erCandidatesForHospital(appt.getHospitalId())).thenReturn(List.of());
     when(users.findEnabledByRole(any())).thenReturn(List.of());
-    when(alerts.saveAndFlush(any())).thenAnswer(inv -> {
-      var a = inv.getArgument(0, com.mediflow.shared.domain.RedAlert.class);
-      a.setId(UUID.randomUUID());
-      return a;
-    });
+    when(alerts.saveAndFlush(any()))
+        .thenAnswer(
+            inv -> {
+              var a = inv.getArgument(0, com.mediflow.shared.domain.RedAlert.class);
+              a.setId(UUID.randomUUID());
+              return a;
+            });
     when(encounters.findByAppointmentId(apptId)).thenReturn(Optional.empty());
     when(patients.findById(appt.getPatientId())).thenReturn(Optional.empty());
 

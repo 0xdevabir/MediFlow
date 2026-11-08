@@ -1,54 +1,68 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('audit.anomaly.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{audit.anomaly.title}">Anomalies</h1>
-  <div class="mb-3">
-    <a th:href="@{/admin/audit/anomalies(openOnly=true)}" th:text="#{audit.anomaly.openOnly}">Open</a>
-    ·
-    <a th:href="@{/admin/audit/anomalies(openOnly=false)}" th:text="#{audit.anomaly.all}">All</a>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='audit.anomaly.title', subtitleKey='audit.anomaly.intro')}"></div>
+
+  <div class="mb-3 d-flex flex-wrap gap-2" role="group" aria-label="Filter">
+    <a class="btn btn-sm"
+       th:classappend="${openOnly} ? 'btn-teal' : 'btn-outline-secondary'"
+       th:href="@{/admin/audit/anomalies(openOnly=true)}"
+       th:text="#{audit.anomaly.openOnly}">Open only</a>
+    <a class="btn btn-sm"
+       th:classappend="${!openOnly} ? 'btn-teal' : 'btn-outline-secondary'"
+       th:href="@{/admin/audit/anomalies(openOnly=false)}"
+       th:text="#{audit.anomaly.all}">All</a>
   </div>
-  <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{audit.anomaly.empty}">Empty</p>
-  <div class="table-responsive" th:unless="${rows.isEmpty()}">
-    <table class="table table-sm align-middle">
+
+  <div th:if="${rows == null or rows.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty('audit.anomaly.empty', 'audit.anomaly.emptyHint')}"></div>
+
+  <div class="table-responsive mf-panel p-0" th:unless="${rows == null or rows.isEmpty()}">
+    <table class="table mf-data-table mf-table-stack align-middle mb-0">
       <thead>
       <tr>
         <th th:text="#{audit.anomaly.actor}">Actor</th>
         <th th:text="#{audit.anomaly.kind}">Kind</th>
         <th th:text="#{audit.anomaly.window}">Window</th>
-        <th th:text="#{audit.anomaly.count}">Count</th>
+        <th th:text="#{audit.anomaly.count}">Observed</th>
         <th th:text="#{audit.anomaly.threshold}">Threshold</th>
-        <th></th>
+        <th th:text="#{audit.anomaly.actions}">Actions</th>
       </tr>
       </thead>
       <tbody>
       <tr th:each="r : ${rows}">
-        <td th:text="${r.actorName}">name</td>
-        <td th:text="${r.kind}">kind</td>
-        <td>
-          <span th:text="${r.windowStart}">s</span> →
+        <td th:attr="data-label=#{audit.anomaly.actor}" th:text="${r.actorName}">name</td>
+        <td th:attr="data-label=#{audit.anomaly.kind}" th:text="${r.kind}">kind</td>
+        <td th:attr="data-label=#{audit.anomaly.window}">
+          <span th:text="${r.windowStart}">s</span>
+          <span class="text-muted">→</span>
           <span th:text="${r.windowEnd}">e</span>
         </td>
-        <td th:text="${r.observedCount}">0</td>
-        <td th:text="${r.threshold}">50</td>
-        <td>
-          <form th:if="${!r.reviewed()}" class="d-flex gap-2"
+        <td th:attr="data-label=#{audit.anomaly.count}" th:text="${r.observedCount}">0</td>
+        <td th:attr="data-label=#{audit.anomaly.threshold}" th:text="${r.threshold}">50</td>
+        <td th:attr="data-label=#{audit.anomaly.actions}">
+          <form th:if="${!r.reviewed()}" class="d-flex flex-wrap gap-2"
                 th:action="@{/admin/audit/anomalies/{id}/review(id=${r.id})}" method="post">
-            <input class="form-control form-control-sm" name="note" th:placeholder="#{audit.anomaly.note}"/>
-            <button class="btn btn-sm btn-outline-primary" type="submit"
-                    th:text="#{audit.anomaly.review}">Review</button>
+            <label class="visually-hidden" th:for="${'anomaly-note-' + r.id}" th:text="#{audit.anomaly.note}">Note</label>
+            <input class="form-control form-control-sm" th:id="${'anomaly-note-' + r.id}"
+                   name="note" th:placeholder="#{audit.anomaly.note}"/>
+            <button class="btn btn-sm btn-outline-secondary" type="submit"
+                    th:text="#{audit.anomaly.review}">Sign off</button>
           </form>
           <span th:if="${r.reviewed()}" class="text-muted small"
-                th:text="${r.reviewNote}">reviewed</span>
+                th:text="${r.reviewNote} ?: #{audit.anomaly.reviewed}">reviewed</span>
         </td>
       </tr>
       </tbody>
     </table>
   </div>
-  <p class="mt-3"><a th:href="@{/admin/audit}" th:text="#{audit.admin.title}">Back</a></p>
+
+  <p class="mt-4"><a th:href="@{/admin/audit}" th:text="#{audit.admin.back}">Back to audit</a></p>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

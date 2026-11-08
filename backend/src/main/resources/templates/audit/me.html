@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('audit.me.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{audit.me.title}">Who accessed my record</h1>
-  <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{audit.me.empty}">No access events yet.</p>
-  <div class="table-responsive" th:unless="${rows.isEmpty()}">
-    <table class="table table-sm table-striped align-middle">
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='audit.me.title', subtitleKey='audit.me.intro')}"></div>
+
+  <div th:if="${rows == null or rows.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty('audit.me.empty', 'audit.me.emptyHint')}"></div>
+
+  <div class="table-responsive mf-panel p-0" th:unless="${rows == null or rows.isEmpty()}">
+    <table class="table mf-data-table mf-table-stack align-middle mb-0">
       <thead>
       <tr>
         <th th:text="#{audit.me.when}">When</th>
@@ -20,11 +24,11 @@
       </thead>
       <tbody>
       <tr th:each="r : ${rows}">
-        <td th:text="${r.occurredAt}">2026-11-07</td>
-        <td th:text="${r.actorName}">Name</td>
-        <td th:text="${r.actorRoles}">ROLE_DOCTOR</td>
-        <td th:text="${r.action}">PATIENT_READ</td>
-        <td th:text="${r.purpose}">treatment</td>
+        <td th:attr="data-label=#{audit.me.when}" th:text="${r.occurredAt}">2026-11-07</td>
+        <td th:attr="data-label=#{audit.me.who}" th:text="${r.actorName}">Name</td>
+        <td th:attr="data-label=#{audit.me.roles}" th:text="${r.actorRoles}">ROLE_DOCTOR</td>
+        <td th:attr="data-label=#{audit.me.action}" th:text="${r.action}">PATIENT_READ</td>
+        <td th:attr="data-label=#{audit.me.purpose}" th:text="${r.purpose}">treatment</td>
       </tr>
       </tbody>
     </table>

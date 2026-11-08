@@ -1,30 +1,49 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('audit.admin.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{audit.admin.title}">Audit &amp; compliance</h1>
-  <p class="text-muted"
-     th:text="#{audit.admin.retention(${retentionYears})}">Retention</p>
-  <p th:if="${lastCheck != null}">
-    <span th:text="#{audit.chain.last}">Last check</span>:
-    <strong th:text="${lastCheck.message}">OK</strong>
-  </p>
-  <p th:if="${openAnomalies > 0}" class="text-warning"
-     th:text="#{audit.admin.openAnomalies(${openAnomalies})}">alerts</p>
-  <div class="list-group">
-    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/chain}"
-       th:text="#{audit.admin.chain}">Chain</a>
-    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/search}"
-       th:text="#{audit.admin.search}">Search</a>
-    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/anomalies}"
-       th:text="#{audit.admin.anomalies}">Anomalies</a>
-    <a class="list-group-item list-group-item-action" th:href="@{/admin/audit/export}"
-       th:text="#{audit.admin.export}">Export</a>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='audit.admin.title', subtitleKey='audit.admin.intro')}"></div>
+
+  <p class="text-muted" th:text="#{audit.admin.retention(${retentionYears})}">Retention</p>
+
+  <div class="mf-panel mb-4 d-flex flex-wrap gap-3 align-items-center">
+    <div th:if="${lastCheck != null}">
+      <span class="small text-muted" th:text="#{audit.chain.last}">Last check</span>:
+      <strong th:text="${lastCheck.message}">OK</strong>
+    </div>
+    <div th:if="${lastCheck == null}" class="small text-muted" th:text="#{audit.chain.none}">None</div>
+    <span th:if="${openAnomalies > 0}" class="mf-badge mf-badge-urgent"
+          th:text="#{audit.admin.openAnomalies(${openAnomalies})}">alerts</span>
   </div>
-  <p class="mt-3"><a th:href="@{/admin}" th:text="#{admin.dashboard.title}">Admin</a></p>
+
+  <div class="mf-role-grid mf-role-grid-3">
+    <section class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{audit.admin.chain}">Chain integrity</h2>
+      <p class="mf-tile-meta" th:text="#{audit.admin.chainHint}">Verify append-only hash chain</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/admin/audit/chain}" th:text="#{home.cta.open}">Open</a>
+    </section>
+    <section class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{audit.admin.search}">Audit search</h2>
+      <p class="mf-tile-meta" th:text="#{audit.admin.searchHint}">Filter by actor, patient, action, date</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/admin/audit/search}" th:text="#{home.cta.open}">Open</a>
+    </section>
+    <section class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{audit.admin.anomalies}">Anomaly alerts</h2>
+      <p class="mf-tile-meta" th:text="#{audit.admin.anomaliesHint}">Review high patient-touch rates</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/admin/audit/anomalies}" th:text="#{home.cta.open}">Open</a>
+    </section>
+    <section class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{audit.admin.export}">Export CSV</h2>
+      <p class="mf-tile-meta" th:text="#{audit.admin.exportHint}">Download within retention window</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/admin/audit/export}" th:text="#{audit.admin.export}">Export</a>
+    </section>
+  </div>
+
+  <p class="mt-4"><a th:href="@{/admin}" th:text="#{admin.dashboard.back}">Back to admin</a></p>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

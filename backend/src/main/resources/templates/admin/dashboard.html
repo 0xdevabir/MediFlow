@@ -1,32 +1,110 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{layout/base :: head('admin.dashboard.title')}"></head>
-<body class="bg-light">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-2" th:text="#{admin.dashboard.title}">Administration</h1>
-  <p class="text-muted" th:text="#{admin.dashboard.intro}">Intro</p>
-  <p th:if="${isAdmin and lastCheck != null}" class="small">
-    <span th:text="#{audit.chain.last}">Last check</span>:
-    <span th:text="${lastCheck.message}">OK</span>
-  </p>
-  <p th:if="${isAdmin and openAnomalies != null and openAnomalies > 0}" class="text-warning"
-     th:text="#{audit.admin.openAnomalies(${openAnomalies})}">alerts</p>
-  <div class="list-group">
-    <a class="list-group-item list-group-item-action" th:href="@{/directory}"
-       th:text="#{admin.dashboard.directory}">Directory</a>
-    <a class="list-group-item list-group-item-action" th:href="@{/identity/break-glass/review}"
-       th:text="#{admin.dashboard.users}">Users / break-glass</a>
-    <a class="list-group-item list-group-item-action" th:if="${isAdmin}" th:href="@{/admin/audit}"
-       th:text="#{admin.dashboard.audit}">Audit</a>
-    <a class="list-group-item list-group-item-action" th:href="@{/admin/settings}"
-       th:text="#{admin.dashboard.settings}">Settings</a>
-    <a class="list-group-item list-group-item-action" th:if="${isAdmin}" th:href="@{/admin/analytics}"
-       th:text="#{admin.dashboard.analytics}">Analytics</a>
-    <a class="list-group-item list-group-item-action" th:if="${isAdmin}" th:href="@{/admin/dhis2}"
-       th:text="#{admin.dashboard.dhis2}">DHIS2</a>
-  </div>
+
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey=${pageTitleKey}, subtitleKey=${pageSubtitleKey})}"></div>
+
+  <!-- Clinical approver: pending dual-approval queue is the primary job -->
+  <section class="mb-5" aria-labelledby="pending-approvals" th:if="${isApprover or isAdmin}">
+    <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+      <h2 id="pending-approvals" class="h5 mb-0" th:text="#{admin.settings.pending}">Pending dual approvals</h2>
+      <a class="small" th:href="@{/admin/settings}" th:text="#{admin.dashboard.settings}">Settings</a>
+    </div>
+
+    <div th:if="${pending == null or pending.isEmpty()}"
+         th:replace="~{layout/fragments/empty-state :: empty('admin.settings.emptyPending', 'admin.approver.emptyHint')}"></div>
+
+    <div class="vstack gap-3" th:unless="${pending == null or pending.isEmpty()}">
+      <article class="mf-panel" th:each="p : ${pending}">
+        <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+          <div>
+            <div class="fw-semibold">
+              <span th:text="${p.settingKey}">key</span>
+              <span class="text-muted">→</span>
+              <span th:text="${p.proposedValue}">val</span>
+            </div>
+            <div class="small text-muted" th:text="${p.requestedAt}">at</div>
+          </div>
+          <span class="mf-badge mf-badge-ai" th:text="#{admin.approver.pendingBadge}">Pending</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <form th:action="@{/admin/approvals/{id}/approve(id=${p.id})}" method="post">
+            <button class="btn btn-sm btn-teal" type="submit" th:text="#{admin.settings.approve}">Approve</button>
+          </form>
+          <form th:action="@{/admin/approvals/{id}/reject(id=${p.id})}" method="post" class="d-flex flex-wrap gap-2">
+            <label class="visually-hidden" th:for="${'reject-reason-' + p.id}" th:text="#{admin.settings.rejectReason}">Reason</label>
+            <input class="form-control form-control-sm" th:id="${'reject-reason-' + p.id}"
+                   name="reason" th:placeholder="#{admin.settings.rejectReason}"/>
+            <button class="btn btn-sm btn-outline-danger" type="submit" th:text="#{admin.settings.reject}">Reject</button>
+          </form>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Admin-only compliance strip (no patient identifiers) -->
+  <section class="mb-4" th:if="${isAdmin}" aria-labelledby="admin-compliance">
+    <h2 id="admin-compliance" class="visually-hidden" th:text="#{admin.dashboard.compliance}">Compliance</h2>
+    <div class="mf-panel d-flex flex-wrap gap-3 align-items-center">
+      <div th:if="${lastCheck != null}">
+        <span class="small text-muted" th:text="#{audit.chain.last}">Last check</span>:
+        <span th:text="${lastCheck.message}">OK</span>
+      </div>
+      <div th:if="${openAnomalies != null and openAnomalies > 0}">
+        <span class="mf-badge mf-badge-urgent"
+              th:text="#{audit.admin.openAnomalies(${openAnomalies})}">alerts</span>
+      </div>
+      <div th:if="${lastCheck == null and (openAnomalies == null or openAnomalies == 0)}"
+           class="small text-muted" th:text="#{admin.dashboard.complianceOk}">No open alerts</div>
+    </div>
+  </section>
+
+  <!-- Navigation tiles: admin full set; approver sees settings only (plus pending above) -->
+  <section th:if="${isAdmin}" aria-labelledby="admin-tiles">
+    <h2 id="admin-tiles" class="h5 mb-3" th:text="#{admin.dashboard.tiles}">Admin tools</h2>
+    <div class="mf-role-grid mf-role-grid-3">
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.directory}">Directory</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.directoryHint}">Hospitals, departments, tests</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/directory}" th:text="#{home.cta.open}">Open</a>
+      </section>
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.staff}">Staff users</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.staffHint}">Managed in identity</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/identity/staff}" th:text="#{home.cta.open}">Open</a>
+      </section>
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.breakGlass}">Break-glass review</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.breakGlassHint}">Emergency access sign-off</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/identity/break-glass/review}" th:text="#{home.cta.open}">Open</a>
+      </section>
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.settings}">Settings &amp; approvals</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.settingsHint}">Thresholds and dual approval</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/admin/settings}" th:text="#{home.cta.open}">Open</a>
+      </section>
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.audit}">Audit &amp; compliance</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.auditHint}">Search, chain, anomalies</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/admin/audit}" th:text="#{home.cta.open}">Open</a>
+      </section>
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.analytics}">Analytics</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.analyticsHint}">Aggregates only</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/admin/analytics}" th:text="#{home.cta.open}">Open</a>
+      </section>
+      <section class="mf-tile">
+        <h3 class="mf-tile-title" th:text="#{admin.dashboard.dhis2}">DHIS2 export</h3>
+        <p class="mf-tile-meta" th:text="#{admin.dashboard.dhis2Hint}">Monthly anonymised JSON</p>
+        <a class="btn btn-sm btn-teal" th:href="@{/admin/dhis2}" th:text="#{home.cta.open}">Open</a>
+      </section>
+    </div>
+  </section>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

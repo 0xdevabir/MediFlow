@@ -1,39 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('audit.search.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{audit.search.title}">Audit search</h1>
-  <form class="row g-2 mb-4" method="get" th:action="@{/admin/audit/search}">
-    <div class="col-md-3">
-      <label class="form-label" th:text="#{audit.search.actor}">Actor</label>
-      <input class="form-control" name="actorUserId" th:value="${actorUserId}"/>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='audit.search.title', subtitleKey='audit.search.intro')}"></div>
+
+  <form class="mf-panel row g-3 mb-4" method="get" th:action="@{/admin/audit/search}">
+    <div class="col-md-4">
+      <label class="form-label" for="actorUserId" th:text="#{audit.search.actor}">Actor</label>
+      <input class="form-control" id="actorUserId" name="actorUserId" th:value="${actorUserId}"
+             autocomplete="off" th:placeholder="#{audit.search.uuidHint}"/>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="patientId" th:text="#{audit.search.patient}">Patient</label>
+      <input class="form-control" id="patientId" name="patientId" th:value="${patientId}"
+             autocomplete="off" th:placeholder="#{audit.search.uuidHint}"/>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="action" th:text="#{audit.search.action}">Action</label>
+      <input class="form-control" id="action" name="action" th:value="${action}"
+             th:placeholder="#{audit.search.actionHint}"/>
     </div>
     <div class="col-md-3">
-      <label class="form-label" th:text="#{audit.search.patient}">Patient</label>
-      <input class="form-control" name="patientId" th:value="${patientId}"/>
+      <label class="form-label" for="from" th:text="#{audit.search.from}">From</label>
+      <input class="form-control" id="from" type="date" name="from" th:value="${from}"/>
     </div>
-    <div class="col-md-2">
-      <label class="form-label" th:text="#{audit.search.action}">Action</label>
-      <input class="form-control" name="action" th:value="${action}"/>
+    <div class="col-md-3">
+      <label class="form-label" for="to" th:text="#{audit.search.to}">To</label>
+      <input class="form-control" id="to" type="date" name="to" th:value="${to}"/>
     </div>
-    <div class="col-md-2">
-      <label class="form-label" th:text="#{audit.search.from}">From</label>
-      <input class="form-control" type="date" name="from" th:value="${from}"/>
-    </div>
-    <div class="col-md-2">
-      <label class="form-label" th:text="#{audit.search.to}">To</label>
-      <input class="form-control" type="date" name="to" th:value="${to}"/>
-    </div>
-    <div class="col-12">
-      <button class="btn btn-primary" type="submit" th:text="#{audit.search.submit}">Search</button>
+    <div class="col-md-6 d-flex align-items-end gap-2">
+      <button class="btn btn-teal" type="submit" th:text="#{audit.search.submit}">Search</button>
+      <a class="btn btn-outline-secondary" th:href="@{/admin/audit/search}" th:text="#{audit.search.clear}">Clear</a>
     </div>
   </form>
-  <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{audit.search.empty}">Empty</p>
-  <div class="table-responsive" th:unless="${rows.isEmpty()}">
-    <table class="table table-sm table-striped">
+
+  <div th:if="${rows == null or rows.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty('audit.search.empty', 'audit.search.emptyHint')}"></div>
+
+  <div class="table-responsive mf-panel p-0" th:unless="${rows == null or rows.isEmpty()}">
+    <table class="table mf-data-table mf-table-stack align-middle mb-0">
       <thead>
       <tr>
         <th th:text="#{audit.search.seq}">Seq</th>
@@ -48,22 +57,23 @@
       </thead>
       <tbody>
       <tr th:each="r : ${rows}">
-        <td th:text="${r.seq}">1</td>
-        <td th:text="${r.occurredAt}">t</td>
-        <td th:text="${r.actorName}">n</td>
-        <td th:text="${r.patientId}">p</td>
-        <td th:text="${r.action}">a</td>
-        <td>
+        <td th:attr="data-label=#{audit.search.seq}" th:text="${r.seq}">1</td>
+        <td th:attr="data-label=#{audit.search.when}" th:text="${r.occurredAt}">t</td>
+        <td th:attr="data-label=#{audit.search.actorName}" th:text="${r.actorName}">n</td>
+        <td th:attr="data-label=#{audit.search.patientId}" th:text="${r.patientId}">p</td>
+        <td th:attr="data-label=#{audit.search.action}" th:text="${r.action}">a</td>
+        <td th:attr="data-label=#{audit.search.resource}">
           <span th:text="${r.resourceType}">T</span>
-          <span th:if="${r.resourceId != null}" th:text="${r.resourceId}">id</span>
+          <span th:if="${r.resourceId != null}" class="text-muted small" th:text="${r.resourceId}">id</span>
         </td>
-        <td th:text="${r.purpose}">p</td>
-        <td th:text="${r.outcome}">o</td>
+        <td th:attr="data-label=#{audit.search.purpose}" th:text="${r.purpose}">p</td>
+        <td th:attr="data-label=#{audit.search.outcome}" th:text="${r.outcome}">o</td>
       </tr>
       </tbody>
     </table>
   </div>
-  <p class="mt-3"><a th:href="@{/admin/audit}" th:text="#{audit.admin.title}">Back</a></p>
+
+  <p class="mt-4"><a th:href="@{/admin/audit}" th:text="#{audit.admin.back}">Back to audit</a></p>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

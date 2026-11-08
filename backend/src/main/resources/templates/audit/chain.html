@@ -1,31 +1,46 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('audit.chain.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0" th:text="#{audit.chain.title}">Chain</h1>
+
+  <header class="mb-4 d-flex flex-wrap align-items-start justify-content-between gap-3">
+    <div>
+      <h1 class="mf-page-title" th:text="#{audit.chain.title}">Audit hash chain</h1>
+      <p class="mf-page-subtitle mb-0" th:text="#{audit.chain.intro}">Verify append-only integrity</p>
+    </div>
     <form th:action="@{/admin/audit/chain/verify}" method="post">
-      <button class="btn btn-primary" type="submit" th:text="#{audit.chain.verify}">Verify</button>
+      <button class="btn btn-teal" type="submit" th:text="#{audit.chain.verify}">Verify now</button>
     </form>
+  </header>
+
+  <div th:if="${lastCheck == null}"
+       th:replace="~{layout/fragments/empty-state :: empty('audit.chain.none', 'audit.chain.noneHint')}"></div>
+
+  <div th:if="${lastCheck != null}" class="mf-panel mb-4"
+       th:classappend="${lastCheck.ok} ? '' : ' border-danger'">
+    <span th:if="${lastCheck.ok}" class="mf-badge mf-badge-success" th:text="#{audit.chain.ok}">OK</span>
+    <span th:unless="${lastCheck.ok}" class="mf-badge mf-badge-critical" th:text="#{audit.chain.broken}">Broken</span>
+    <p class="mt-2 mb-1" th:text="${lastCheck.message}">msg</p>
+    <p class="small text-muted mb-0" th:text="${lastCheck.checkedAt}">at</p>
   </div>
-  <div th:if="${lastCheck == null}" class="text-muted" th:text="#{audit.chain.none}">None</div>
-  <div th:if="${lastCheck != null}" class="alert"
-       th:classappend="${lastCheck.ok} ? 'alert-success' : 'alert-danger'">
-    <span th:text="${lastCheck.ok} ? #{audit.chain.ok} : #{audit.chain.broken}">OK</span>
-    — <span th:text="${lastCheck.message}">msg</span>
-    <div class="small mt-1" th:text="${lastCheck.checkedAt}">at</div>
-  </div>
-  <h2 class="h5 mt-4" th:text="#{audit.chain.history}">History</h2>
-  <ul class="list-group">
-    <li class="list-group-item" th:each="c : ${recent}">
-      <span th:text="${c.checkedAt}">t</span> —
-      <span th:text="${c.message}">m</span>
-    </li>
-  </ul>
-  <p class="mt-3"><a th:href="@{/admin/audit}" th:text="#{audit.admin.title}">Back</a></p>
+
+  <section aria-labelledby="chain-history">
+    <h2 id="chain-history" class="h5 mb-3" th:text="#{audit.chain.history}">Recent checks</h2>
+    <div th:if="${recent == null or recent.isEmpty()}"
+         th:replace="~{layout/fragments/empty-state :: empty('audit.chain.none', '')}"></div>
+    <ul class="list-group" th:unless="${recent == null or recent.isEmpty()}">
+      <li class="list-group-item d-flex flex-wrap justify-content-between gap-2" th:each="c : ${recent}">
+        <span th:text="${c.message}">m</span>
+        <span class="small text-muted" th:text="${c.checkedAt}">t</span>
+      </li>
+    </ul>
+  </section>
+
+  <p class="mt-4"><a th:href="@{/admin/audit}" th:text="#{audit.admin.back}">Back to audit</a></p>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

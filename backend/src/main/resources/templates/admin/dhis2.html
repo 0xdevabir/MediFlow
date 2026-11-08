@@ -1,23 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('admin.dhis2.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-2" th:text="#{admin.dhis2.title}">DHIS2</h1>
-  <p class="text-muted" th:text="#{admin.dhis2.intro}">Intro</p>
-  <p class="badge text-bg-secondary" th:text="#{admin.dhis2.pushOff}">push off</p>
-  <form class="row g-2 align-items-end mt-3" method="get" th:action="@{/admin/dhis2/export}">
-    <div class="col-auto">
-      <label class="form-label" th:text="#{admin.dhis2.month}">Month</label>
-      <input class="form-control" type="date" name="month"/>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='admin.dhis2.title', subtitleKey='admin.dhis2.intro')}"></div>
+
+  <div class="mf-panel mb-4">
+    <p class="mb-2">
+      <span class="mf-badge mf-badge-normal" th:text="#{admin.dhis2.pushOff}">Live push: disabled</span>
+    </p>
+    <p class="small text-muted mb-0" th:text="#{admin.dhis2.orgUnitNote}">
+      Org-unit is a placeholder string until facility mapping exists. Exported JSON uses orgUnit=MediFlow.
+    </p>
+  </div>
+
+  <form class="mf-panel row g-3 align-items-end" method="get" th:action="@{/admin/dhis2/export}">
+    <div class="col-sm-6">
+      <label class="form-label" for="dhis2-month" th:text="#{admin.dhis2.month}">Month</label>
+      <input class="form-control" id="dhis2-month" type="date" name="month"/>
     </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" type="submit" th:text="#{admin.dhis2.download}">Download</button>
+    <div class="col-sm-6">
+      <button class="btn btn-teal" type="submit" th:text="#{admin.dhis2.download}">Download JSON</button>
     </div>
   </form>
-  <p class="mt-3"><a th:href="@{/admin}" th:text="#{admin.dashboard.title}">Admin</a></p>
+
+  <p class="mt-4"><a th:href="@{/admin}" th:text="#{admin.dashboard.back}">Back to admin</a></p>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

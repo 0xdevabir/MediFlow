@@ -46,6 +46,10 @@ public class PortRxDrugDictionary implements RxDrugDictionary {
     if (brandId == null) {
       return Optional.empty();
     }
+    Optional<BrandInfo> fromPort = port.findBrand(brandId).map(PortRxDrugDictionary::toBrand);
+    if (fromPort.isPresent()) {
+      return fromPort;
+    }
     RepositoryDrugDictionaryPort local = repositoryPort.getIfAvailable();
     if (local != null) {
       return local.findBrand(brandId).map(PortRxDrugDictionary::toBrand);

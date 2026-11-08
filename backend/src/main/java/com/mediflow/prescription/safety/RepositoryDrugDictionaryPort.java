@@ -212,8 +212,8 @@ public class RepositoryDrugDictionaryPort implements DrugDictionaryPort {
         .toList();
   }
 
-  /** Brand-by-id helper used by the Rx adapter (shared port has no findBrand yet). */
-  Optional<DrugMatch> findBrand(UUID brandId) {
+  @Override
+  public Optional<DrugMatch> findBrand(UUID brandId) {
     if (brandId == null) {
       return Optional.empty();
     }

@@ -31,19 +31,45 @@ public final class DomainEvents {
       UUID appointmentId, UUID patientId, Instant newStart, Instant at) {}
 
   /**
-   * Doctor schedule / role change that affects already-booked slots (T03 → T10 notify booked
-   * patients).
+   * Doctor schedule / role change that affects already-booked slots (directory → notifications).
+   * Slot counters and {@code roleBecameInactive} were promoted from {@code
+   * DirectoryScheduleChangeDetail}.
    */
   public record PractitionerScheduleChanged(
       UUID practitionerRoleId,
       UUID practitionerId,
       UUID hospitalId,
       List<UUID> affectedBookedSlotIds,
+      int slotsCreated,
+      int slotsUpdated,
+      int slotsRemoved,
+      int slotsClosed,
+      boolean roleBecameInactive,
       Instant at) {
 
     public PractitionerScheduleChanged {
       affectedBookedSlotIds =
           affectedBookedSlotIds == null ? List.of() : List.copyOf(affectedBookedSlotIds);
+    }
+
+    /** Compatibility constructor used by older publishers / tests (counters default to 0). */
+    public PractitionerScheduleChanged(
+        UUID practitionerRoleId,
+        UUID practitionerId,
+        UUID hospitalId,
+        List<UUID> affectedBookedSlotIds,
+        Instant at) {
+      this(
+          practitionerRoleId,
+          practitionerId,
+          hospitalId,
+          affectedBookedSlotIds,
+          0,
+          0,
+          0,
+          0,
+          false,
+          at);
     }
   }
 
@@ -83,6 +109,31 @@ public final class DomainEvents {
 
   public record MedicationDispensed(
       UUID dispenseId, UUID prescriptionId, UUID patientId, Instant at) {}
+
+  /** Pharmacist sent a signed Rx back to the doctor (pharmacy → Rx UI). */
+  public record SendBackRequested(
+      UUID requestId, UUID prescriptionId, UUID patientId, UUID doctorUserId, String reason, Instant at) {}
+
+  /** Pharmacist proposed a same-generic brand substitution awaiting doctor decision. */
+  public record SubstitutionRequested(
+      UUID requestId,
+      UUID prescriptionId,
+      UUID prescriptionItemId,
+      UUID patientId,
+      UUID doctorUserId,
+      UUID proposedBrandId,
+      String reason,
+      Instant at) {}
+
+  public record SubstitutionDecided(
+      UUID requestId, UUID prescriptionId, boolean approved, UUID decidedBy, Instant at) {}
+
+  public record ReferredElsewhere(
+      UUID requestId, UUID prescriptionId, UUID patientId, String reason, Instant at) {}
+
+  /** Revoke arrived after dispense — pharmacy / doctor alert. */
+  public record RevokedRxAlreadyDispensedAlert(
+      UUID prescriptionId, UUID patientId, Instant revokedAt) {}
 
   /** Follow-up date set on a consultation / prescription (T05/T06 → T10 reminders). */
   public record FollowUpScheduled(

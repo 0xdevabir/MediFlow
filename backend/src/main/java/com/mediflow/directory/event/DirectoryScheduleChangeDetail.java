@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Richer companion to {@link DomainEvents.PractitionerScheduleChanged} for notification /
- * appointment consumers that need slot-reconcile stats. Shared DomainEvents stays unchanged until
- * V2-01 promotes these fields (see {@code docs/plan/requests/V2-04.md}).
+ * Local companion for schedule edits. Prefer publishing {@link
+ * DomainEvents.PractitionerScheduleChanged} (now carries the same counters). Kept for tests /
+ * transitional listeners.
  */
 public record DirectoryScheduleChangeDetail(
     UUID practitionerRoleId,
@@ -29,7 +29,16 @@ public record DirectoryScheduleChangeDetail(
 
   public DomainEvents.PractitionerScheduleChanged toShared() {
     return new DomainEvents.PractitionerScheduleChanged(
-        practitionerRoleId, practitionerId, hospitalId, affectedBookedSlotIds, at);
+        practitionerRoleId,
+        practitionerId,
+        hospitalId,
+        affectedBookedSlotIds,
+        slotsCreated,
+        slotsUpdated,
+        slotsRemoved,
+        slotsClosed,
+        roleBecameInactive,
+        at);
   }
 
   public int affectedBookedCount() {

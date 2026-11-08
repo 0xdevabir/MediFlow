@@ -37,6 +37,9 @@ public interface DrugDictionaryPort {
 
   List<DoseLimitRule> doseLimits(UUID genericId);
 
+  /** Exact brand-by-id lookup for dispense / substitution. Empty when unknown — never guess. */
+  Optional<DrugMatch> findBrand(UUID brandId);
+
   /**
    * One dictionary hit. {@code brandId} is null when the hit is a generic name. {@code score} is
    * 1.0 for exact hits and similarity for suggestions. {@code illustrative} marks seeded sample

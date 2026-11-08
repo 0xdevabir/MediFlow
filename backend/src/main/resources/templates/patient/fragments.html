@@ -2,8 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 <!--/*
-  Expects model: pct (Integer|null), adherenceConfigured (boolean).
-  Loaded via AdherenceQueryPort in the patient controller — graceful empty when port absent.
+  Expects model: pct (Integer|null), adherenceConfigured (boolean),
+  adherencePercent (alias of pct), nextVisit (optional).
 */-->
 <section th:fragment="adherenceWidget" class="mf-tile mb-4" sec:authorize="hasRole('PATIENT')"
          aria-labelledby="patient-adherence-title">
@@ -27,13 +27,16 @@
   </p>
 </section>
 
-<!-- Optional richer home tile set for V2-01 HomeController include -->
+<!-- Role-home tile set for HomeController -->
 <div th:fragment="dashboard" class="mf-role-grid mf-role-grid-3">
   <section class="mf-tile">
-    <h3 class="mf-tile-title" th:text="#{patient.dashboard.title}">My care</h3>
-    <p class="mf-tile-meta" th:text="#{patient.dashboard.home.body}">Open your patient dashboard</p>
-    <a class="btn btn-sm btn-teal" th:href="@{/patients/me/dashboard}"
-       th:text="#{patient.dashboard.cta.open}">Open</a>
+    <h3 class="mf-tile-title" th:text="#{patient.dashboard.nextAppt}">Next appointment</h3>
+    <p class="mf-tile-meta" th:if="${nextVisit != null}"
+       th:text="${nextVisit.summary()}">Next visit</p>
+    <p class="mf-tile-meta" th:if="${nextVisit == null}"
+       th:text="#{patient.dashboard.nextAppt.empty}">No upcoming visit on file</p>
+    <a class="btn btn-sm btn-teal" th:href="@{/appointments}"
+       th:text="#{patient.dashboard.cta.appointments}">Appointments</a>
   </section>
   <section class="mf-tile">
     <h3 class="mf-tile-title" th:text="#{patient.dashboard.book}">Book a visit</h3>

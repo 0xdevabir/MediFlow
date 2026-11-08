@@ -1,23 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('notification.reminders.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{notification.reminders.title}">My medicine reminders</h1>
+  <header class="mb-4">
+    <h1 class="mf-page-title" th:text="#{notification.reminders.title}">My medicine reminders</h1>
+    <p class="mf-page-subtitle mb-0" th:text="#{notification.reminders.lead}">Track doses and mark them taken or skipped.</p>
+  </header>
   <ul th:replace="~{notification/fragments :: subnav('reminders')}"></ul>
   <th:block th:if="${hasPatient}">
-    <div class="card mb-3" style="max-width: 20rem">
-      <div class="card-body">
-        <div class="small text-muted" th:text="#{notification.reminders.adherence}">Adherence</div>
-        <div class="display-6" data-testid="adherence-percent" th:if="${adherence != null}" th:text="${adherence} + '%'">90%</div>
-        <div class="text-muted" th:if="${adherence == null}" th:text="#{notification.reminders.adherence.none}">No doses due yet</div>
+    <section class="mf-tile mb-4" style="max-width: 20rem" aria-labelledby="reminders-adherence-title">
+      <h2 id="reminders-adherence-title" class="mf-tile-title" th:text="#{notification.reminders.adherence}">Adherence</h2>
+      <div class="display-6" data-testid="adherence-percent" th:if="${adherence != null}" th:text="${adherence} + '%'">90%</div>
+      <p class="mf-tile-meta mb-0" th:if="${adherence == null}" th:text="#{notification.reminders.adherence.none}">No doses due yet</p>
+      <div class="progress mt-2" th:if="${adherence != null}" role="progressbar"
+           th:attr="aria-valuenow=${adherence},aria-label=#{notification.reminders.adherence}"
+           aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar"
+             th:classappend="${adherence >= 80 ? 'bg-success' : (adherence >= 50 ? 'bg-warning' : 'bg-danger')}"
+             th:style="'width: ' + ${adherence} + '%'"></div>
       </div>
-    </div>
-    <p th:if="${rows.isEmpty()}" class="text-muted" th:text="#{notification.reminders.empty}">No reminders.</p>
+    </section>
+    <div th:if="${rows.isEmpty()}"
+         th:replace="~{layout/fragments/empty-state :: empty('notification.reminders.empty', 'notification.reminders.empty.hint')}"></div>
     <div class="table-responsive" th:unless="${rows.isEmpty()}">
-      <table class="table table-sm align-middle bg-white">
+      <table class="table mf-data-table mf-table-stack align-middle mb-0">
         <thead>
         <tr>
           <th th:text="#{notification.reminders.when}">When</th>
@@ -28,13 +38,20 @@
         </thead>
         <tbody>
         <tr th:each="row : ${rows}">
-          <td th:text="${row.when}">7 Nov 2026, 8:00 AM</td>
-          <td><span th:text="${row.drug}">Napa</span> <span class="text-muted small" th:text="${row.dose}">500 mg</span></td>
-          <td>
-            <span th:if="${row.outcome != null and row.outcome.name() == 'TAKEN'}" class="badge bg-success" th:text="#{notification.reminders.taken}">Taken</span>
-            <span th:if="${row.outcome != null and row.outcome.name() == 'SKIPPED'}" class="badge bg-secondary" th:text="#{notification.reminders.skipped}">Skipped</span>
-            <span th:if="${row.outcome == null and row.due}" class="badge bg-warning text-dark" th:text="#{notification.reminders.due}">Due</span>
-            <span th:if="${row.outcome == null and !row.due}" class="badge bg-light text-dark" th:text="#{notification.reminders.upcoming}">Upcoming</span>
+          <td th:attr="data-label=#{notification.reminders.when}" th:text="${row.when}">7 Nov 2026, 8:00 AM</td>
+          <td th:attr="data-label=#{notification.reminders.what}">
+            <span th:text="${row.drug}">Napa</span>
+            <span class="text-muted small" th:text="${row.dose}">500 mg</span>
+          </td>
+          <td th:attr="data-label=#{notification.reminders.status}">
+            <span th:if="${row.outcome != null and row.outcome.name() == 'TAKEN'}"
+                  th:replace="~{layout/fragments/status-badge :: badgeKey('SUCCESS', 'notification.reminders.taken')}"></span>
+            <span th:if="${row.outcome != null and row.outcome.name() == 'SKIPPED'}"
+                  th:replace="~{layout/fragments/status-badge :: badgeKey('NORMAL', 'notification.reminders.skipped')}"></span>
+            <span th:if="${row.outcome == null and row.due}"
+                  th:replace="~{layout/fragments/status-badge :: badgeKey('URGENT', 'notification.reminders.due')}"></span>
+            <span th:if="${row.outcome == null and !row.due}"
+                  th:replace="~{layout/fragments/status-badge :: badgeKey('NORMAL', 'notification.reminders.upcoming')}"></span>
           </td>
           <td class="text-end">
             <th:block th:if="${row.due}">
@@ -53,7 +70,8 @@
       </table>
     </div>
   </th:block>
-  <p th:unless="${hasPatient}" class="text-muted" th:text="#{notification.reminders.empty}">No reminders.</p>
+  <div th:unless="${hasPatient}"
+       th:replace="~{layout/fragments/empty-state :: empty('notification.reminders.empty', null)}"></div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

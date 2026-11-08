@@ -1,7 +1,9 @@
 package com.mediflow.notification.repo;
 
 import com.mediflow.shared.domain.AppUser;
+import com.mediflow.shared.domain.AppointmentStatus;
 import com.mediflow.shared.domain.Role;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.Query;
@@ -36,4 +38,16 @@ public interface RecipientLookupRepository extends Repository<AppUser, UUID> {
 
   @Query("select a.doctorId from Appointment a where a.id = :appointmentId")
   List<UUID> findAppointmentDoctor(@Param("appointmentId") UUID appointmentId);
+
+  /**
+   * Active (non-cancelled) appointments on the given slots — used when a practitioner schedule
+   * change leaves booked slots in place and patients must be notified.
+   */
+  @Query(
+      "select new com.mediflow.notification.repo.BookedAppointmentRef(a.id, a.patientId, s.startsAt)"
+          + " from Appointment a, Slot s"
+          + " where a.slotId = s.id and a.slotId in :slotIds and a.status <> :cancelled")
+  List<BookedAppointmentRef> findActiveAppointmentsBySlotIds(
+      @Param("slotIds") Collection<UUID> slotIds,
+      @Param("cancelled") AppointmentStatus cancelled);
 }

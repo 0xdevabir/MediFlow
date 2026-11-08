@@ -125,6 +125,19 @@ class ReminderAdherenceIT extends NotificationTestSupport {
   }
 
   @Test
+  void followUpScheduledEventCreatesReminders() {
+    Patient p = newPatient(null, "01722000013", null);
+    UUID source = UUID.randomUUID();
+    LocalDate date = LocalDate.now().plusDays(10);
+    tx.executeWithoutResult(
+        s -> events.publishEvent(new DomainEvents.FollowUpScheduled(source, p.getId(), date, Instant.now())));
+
+    List<Reminder> all = reminderLookup.findByPatientIdOrderByScheduledAtAsc(p.getId());
+    assertThat(all).extracting(Reminder::getReminderType)
+        .containsExactly(ReminderService.FOLLOW_UP, ReminderService.FOLLOW_UP);
+  }
+
+  @Test
   void dueRemindersAreSentInThePatientsLanguage() {
     AppUser u = newUser("bn", Role.ROLE_PATIENT);
     Patient p = newPatient(u.getId(), "01722000004", null);

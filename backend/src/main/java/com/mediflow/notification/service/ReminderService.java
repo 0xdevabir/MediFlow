@@ -132,8 +132,8 @@ public class ReminderService {
   }
 
   /**
-   * Follow-up visit reminders: the day before at 18:00 and on the day at 08:00 (local zone). Ready
-   * for a follow-up-date event (not yet in {@code DomainEvents}; see report).
+   * Follow-up visit reminders: the day before at 18:00 and on the day at 08:00 (local zone). Driven
+   * by {@link com.mediflow.shared.event.DomainEvents.FollowUpScheduled} (clinical / Rx publishers).
    */
   @Transactional
   public List<Reminder> scheduleFollowUp(UUID sourceId, UUID patientId, LocalDate date) {

@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('notification.prefs.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{notification.prefs.title}">Notification preferences</h1>
+  <header class="mb-4">
+    <h1 class="mf-page-title" th:text="#{notification.prefs.title}">Notification preferences</h1>
+    <p class="mf-page-subtitle mb-0" th:text="#{notification.prefs.lead}">Choose channels, quiet hours and language.</p>
+  </header>
   <ul th:replace="~{notification/fragments :: subnav('prefs')}"></ul>
-  <form th:action="@{/notifications/preferences}" method="post" class="card card-body" style="max-width: 36rem">
+  <form th:action="@{/notifications/preferences}" method="post" class="mf-panel">
     <fieldset class="mb-3">
       <legend class="h6" th:text="#{notification.prefs.channels}">Channels</legend>
       <div class="form-check">
@@ -47,7 +51,7 @@
         <option value="bn" th:selected="${pref.locale == 'bn'}" th:text="#{notification.prefs.language.bn}">Bangla</option>
       </select>
     </div>
-    <div><button class="btn btn-primary" type="submit" th:text="#{notification.prefs.save}">Save</button></div>
+    <div><button class="btn btn-teal" type="submit" th:text="#{notification.prefs.save}">Save</button></div>
   </form>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

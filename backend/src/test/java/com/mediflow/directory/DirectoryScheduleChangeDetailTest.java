@@ -26,6 +26,8 @@ class DirectoryScheduleChangeDetailTest {
     assertEquals(1, detail.affectedBookedCount());
     assertEquals(3, detail.slotsCreated());
     assertEquals(slotId, detail.toShared().affectedBookedSlotIds().getFirst());
+    assertEquals(1, detail.toShared().slotsClosed());
+    assertEquals(3, detail.toShared().slotsCreated());
     assertTrue(detail.toShared().affectedBookedSlotIds() instanceof List);
   }
 }

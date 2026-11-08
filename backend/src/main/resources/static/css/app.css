@@ -331,3 +331,15 @@ a:focus-visible {
   border-color: var(--mf-ai-amber) !important;
   box-shadow: 0 0 0 0.2rem rgba(220, 104, 3, 0.15);
 }
+
+/* Hospital emergency phone emphasis (directory public/admin) */
+.mf-emergency-call {
+  color: var(--mf-critical, #9b1c1c);
+  font-weight: 600;
+  text-decoration: none;
+}
+.mf-emergency-call:hover,
+.mf-emergency-call:focus-visible {
+  color: var(--mf-critical, #9b1c1c);
+  text-decoration: underline;
+}

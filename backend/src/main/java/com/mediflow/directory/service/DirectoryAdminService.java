@@ -1,6 +1,5 @@
 package com.mediflow.directory.service;
 
-import com.mediflow.directory.event.DirectoryScheduleChangeDetail;
 import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.directory.repo.DirectoryJdbc;
 import com.mediflow.directory.schedule.WeeklySchedule;
@@ -218,13 +217,6 @@ public class DirectoryAdminService {
               role.getPractitionerId(),
               role.getHospitalId(),
               result.affectedBookedSlotIds(),
-              at));
-      events.publishEvent(
-          new DirectoryScheduleChangeDetail(
-              role.getId(),
-              role.getPractitionerId(),
-              role.getHospitalId(),
-              result.affectedBookedSlotIds(),
               result.created(),
               result.updated(),
               result.removed(),
@@ -257,13 +249,6 @@ public class DirectoryAdminService {
         || result.closed() > 0) {
       events.publishEvent(
           new DomainEvents.PractitionerScheduleChanged(
-              role.getId(),
-              role.getPractitionerId(),
-              role.getHospitalId(),
-              result.affectedBookedSlotIds(),
-              at));
-      events.publishEvent(
-          new DirectoryScheduleChangeDetail(
               role.getId(),
               role.getPractitionerId(),
               role.getHospitalId(),

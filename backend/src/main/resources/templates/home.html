@@ -12,147 +12,86 @@
     <p class="mf-page-subtitle" th:text="#{home.lead}">Welcome to MediFlow AI.</p>
   </header>
 
-  <!-- PATIENT — modules may later supply richer tiles via a V2-01 home fragment wire-up -->
+  <!-- PATIENT -->
   <section th:if="${isPatient}" class="mb-5" aria-labelledby="home-patient">
     <h2 id="home-patient" class="h5 mb-3" th:text="#{home.section.patient}">Your care</h2>
-    <div class="mf-role-grid mf-role-grid-3">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.appointments}">Appointments</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.appointments.body}">Book or view your next visit.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/appointments}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.lab}">Lab &amp; reports</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.lab.body}">Direct tests and verified reports.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/lab}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.adherence}">Medicine adherence</h3>
-        <p class="mf-tile-meta" th:if="${adherencePercent != null}">
-          <span th:text="#{home.tile.adherence.value(${adherencePercent})}">Adherence 80%</span>
-        </p>
-        <p class="mf-tile-meta" th:if="${adherencePercent == null}"
-           th:text="${adherenceConfigured} ? #{home.tile.adherence.empty} : #{home.tile.configure}">Configure module</p>
-        <a class="btn btn-sm btn-outline-secondary" th:href="@{/prescriptions}" th:text="#{home.cta.prescriptions}">Prescriptions</a>
-      </div>
+    <div th:replace="~{patient/fragments :: dashboard}"></div>
+    <div class="mf-role-grid mt-3">
+      <div th:replace="~{lab/home-tiles :: patient}"></div>
     </div>
   </section>
 
+  <!-- FRONT DESK -->
   <section th:if="${isFrontDesk}" class="mb-5" aria-labelledby="home-fd">
     <h2 id="home-fd" class="h5 mb-3" th:text="#{home.section.frontDesk}">Front desk today</h2>
     <div class="mf-role-grid">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.checkin}">Check-in &amp; queue</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/queue}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.register}">Register / book</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/patients}" th:text="#{home.cta.open}">Open</a>
-      </div>
+      <div th:replace="~{appointment/home-tiles :: frontDesk}"></div>
+      <div th:replace="~{lab/home-tiles :: frontDesk}"></div>
     </div>
   </section>
 
+  <!-- NURSE -->
   <section th:if="${isNurse}" class="mb-5" aria-labelledby="home-nurse">
     <h2 id="home-nurse" class="h5 mb-3" th:text="#{home.section.nurse}">Nursing worklist</h2>
     <div class="mf-role-grid">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.triage}">Triage &amp; vitals</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/queue}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.consults}">Consultations</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/consultations}" th:text="#{home.cta.open}">Open</a>
-      </div>
+      <div th:replace="~{appointment/home-tiles :: nurse}"></div>
     </div>
+    <th:block th:replace="~{clinical/home-tiles :: nurseTiles}"></th:block>
   </section>
 
+  <!-- DOCTOR -->
   <section th:if="${isDoctor}" class="mb-5" aria-labelledby="home-doctor">
     <h2 id="home-doctor" class="h5 mb-3" th:text="#{home.section.doctor}">Clinic today</h2>
-    <div class="mf-role-grid mf-role-grid-3">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.assigned}">Assigned patients</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/consultations}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.rxDrafts}">Prescription drafts</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/prescriptions}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.labResults}">Lab results</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/lab}" th:text="#{home.cta.open}">Open</a>
-      </div>
+    <div class="mf-role-grid">
+      <div th:replace="~{appointment/home-tiles :: doctor}"></div>
+      <div th:replace="~{prescription/home-tiles :: doctor}"></div>
     </div>
+    <th:block th:replace="~{clinical/home-tiles :: doctorTiles}"></th:block>
   </section>
 
+  <!-- ER -->
   <section th:if="${isEr}" class="mb-5" aria-labelledby="home-er">
     <h2 id="home-er" class="h5 mb-3" th:text="#{home.section.er}">Emergency board</h2>
     <div class="mf-role-grid">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.redAlert}">Active Red Alerts</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/er}" th:text="#{home.cta.open}">Open</a>
-      </div>
+      <div th:replace="~{appointment/home-tiles :: er}"></div>
     </div>
   </section>
 
+  <!-- LAB TECH -->
   <section th:if="${isLabTech}" class="mb-5" aria-labelledby="home-lab">
     <h2 id="home-lab" class="h5 mb-3" th:text="#{home.section.lab}">Lab queue</h2>
     <div class="mf-role-grid">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.samples}">Samples &amp; verify</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/lab}" th:text="#{home.cta.open}">Open</a>
-      </div>
+      <div th:replace="~{lab/home-tiles :: labTech}"></div>
     </div>
   </section>
 
+  <!-- PHARMACIST -->
   <section th:if="${isPharmacist}" class="mb-5" aria-labelledby="home-pharm">
     <h2 id="home-pharm" class="h5 mb-3" th:text="#{home.section.pharmacy}">Dispense desk</h2>
     <div class="mf-role-grid">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.dispense}">Dispense queue</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/pharmacy}" th:text="#{home.cta.open}">Open</a>
-      </div>
+      <th:block th:replace="~{pharmacy/home-tiles :: tiles}"></th:block>
     </div>
   </section>
 
+  <!-- ADMIN (full hub; not the approver-only strip) -->
   <section th:if="${isAdmin}" class="mb-5" aria-labelledby="home-admin">
     <h2 id="home-admin" class="h5 mb-3" th:text="#{home.section.admin}">Administration</h2>
     <div class="mf-role-grid mf-role-grid-3">
+      <div th:replace="~{directory/fragments/home-tiles :: admin}"></div>
+      <div th:replace="~{identity/fragments :: admin-staff-tile}"></div>
       <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{home.tile.directory}">Directory</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/directory}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{nav.staff}">Staff users</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/identity/staff}" th:text="#{home.cta.open}">Open</a>
-      </div>
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{nav.admin}">Settings &amp; audit</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
+        <h3 class="mf-tile-title" th:text="#{admin.home.adminTitle}">Administration</h3>
+        <p class="mf-tile-meta" th:text="#{admin.home.adminBody}">Directory, staff, settings, audit</p>
         <a class="btn btn-sm btn-teal" th:href="@{/admin}" th:text="#{home.cta.open}">Open</a>
       </div>
     </div>
   </section>
 
-  <section th:if="${isApprover}" class="mb-5" aria-labelledby="home-approver">
+  <!-- CLINICAL APPROVER — dual-approval queue only (no admin PHI tiles) -->
+  <section th:if="${isApprover and !isAdmin}" class="mb-5" aria-labelledby="home-approver">
     <h2 id="home-approver" class="h5 mb-3" th:text="#{home.section.approver}">Dual approvals</h2>
     <div class="mf-role-grid">
-      <div class="mf-tile">
-        <h3 class="mf-tile-title" th:text="#{nav.approvals}">Pending approvals</h3>
-        <p class="mf-tile-meta" th:text="#{home.tile.configure}">Module tiles appear when configured.</p>
-        <a class="btn btn-sm btn-teal" th:href="@{/admin}" th:text="#{home.cta.open}">Open</a>
-      </div>
+      <th:block th:replace="~{admin/home-tiles :: approver}"></th:block>
     </div>
   </section>
 

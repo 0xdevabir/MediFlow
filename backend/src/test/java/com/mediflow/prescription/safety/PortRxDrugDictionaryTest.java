@@ -112,5 +112,12 @@ class PortRxDrugDictionaryTest {
           new DoseLimitRule(
               genericId, "ADULT", "oral", new BigDecimal("250"), new BigDecimal("1000"), "mg", false));
     }
+
+    @Override
+    public Optional<DrugMatch> findBrand(UUID brandId) {
+      return BRAND.equals(brandId)
+          ? findBrandProducts("Moxacil").stream().findFirst()
+          : Optional.empty();
+    }
   }
 }

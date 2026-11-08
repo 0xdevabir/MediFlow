@@ -282,7 +282,7 @@ public class DrugDictionaryService implements DrugDictionaryPort {
         .findFirst();
   }
 
-  /** Pharmacy dispense / substitution helper — not on the shared port. */
+  @Override
   public Optional<DrugMatch> findBrand(UUID brandId) {
     if (brandId == null) {
       return Optional.empty();

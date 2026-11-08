@@ -211,8 +211,13 @@ public class NotificationEventListeners {
           List<UUID> slotIds = e.affectedBookedSlotIds();
           if (slotIds.isEmpty()) {
             log.info(
-                "Practitioner schedule changed role={} with no booked slots to notify",
-                e.practitionerRoleId());
+                "Practitioner schedule changed role={} created={} updated={} removed={} closed={} inactive={} with no booked slots to notify",
+                e.practitionerRoleId(),
+                e.slotsCreated(),
+                e.slotsUpdated(),
+                e.slotsRemoved(),
+                e.slotsClosed(),
+                e.roleBecameInactive());
             return;
           }
           List<BookedAppointmentRef> booked =

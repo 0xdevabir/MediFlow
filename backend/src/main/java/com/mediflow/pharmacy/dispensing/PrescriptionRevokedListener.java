@@ -74,7 +74,7 @@ public class PrescriptionRevokedListener {
 
     if (already) {
       events.publishEvent(
-          new PharmacyEvents.RevokedRxAlreadyDispensedAlert(
+          new DomainEvents.RevokedRxAlreadyDispensedAlert(
               e.prescriptionId(), e.patientId(), e.at() == null ? clock.now() : e.at()));
       notifyPharmacists(
           e.prescriptionId(),

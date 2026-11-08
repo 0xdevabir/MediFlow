@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.dispensing;
 
 import com.mediflow.pharmacy.dictionary.DrugDictionaryService;
+import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.shared.port.DrugDictionaryPort.DrugMatch;
 import com.mediflow.shared.domain.Prescription;
 import com.mediflow.shared.domain.PrescriptionStatus;
@@ -71,7 +72,7 @@ public class PharmacyRequestService {
             pharmacistUserId,
             doctorUserId);
     events.publishEvent(
-        new PharmacyEvents.SendBackRequested(
+        new DomainEvents.SendBackRequested(
             id, prescriptionId, rx.getPatientId(), doctorUserId, reason.trim(), clock.now()));
     notifyDoctor(doctorUserId, "Pharmacy send-back", "Prescription returned: " + reason.trim());
     audit.record(
@@ -124,7 +125,7 @@ public class PharmacyRequestService {
             pharmacistUserId,
             doctorUserId);
     events.publishEvent(
-        new PharmacyEvents.SubstitutionRequested(
+        new DomainEvents.SubstitutionRequested(
             id,
             prescriptionId,
             itemId,
@@ -165,7 +166,7 @@ public class PharmacyRequestService {
             pharmacistUserId,
             resolveDoctorUserId(rx));
     events.publishEvent(
-        new PharmacyEvents.ReferredElsewhere(
+        new DomainEvents.ReferredElsewhere(
             id, prescriptionId, rx.getPatientId(), reason.trim(), clock.now()));
     audit.record(
         pharmacistUserId,
@@ -216,7 +217,7 @@ public class PharmacyRequestService {
             .addValue("note", note)
             .addValue("id", requestId));
     events.publishEvent(
-        new PharmacyEvents.SubstitutionDecided(
+        new DomainEvents.SubstitutionDecided(
             requestId, (UUID) rows.get(0).get("rx"), approve, doctorUserId, clock.now()));
     audit.record(
         doctorUserId,

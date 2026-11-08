@@ -144,6 +144,14 @@ public class StaffController {
     return "redirect:/identity/staff/" + id;
   }
 
+  private static void flashFirstError(
+      RedirectAttributes flash, StaffUserService.StaffValidationException e) {
+    List<String> keys = e.messageKeys();
+    if (!keys.isEmpty()) {
+      flash.addFlashAttribute("errorKey", keys.getFirst());
+    }
+  }
+
   private static Set<Role> parseRoles(List<String> raw) {
     if (raw == null || raw.isEmpty()) {
       return Set.of();

@@ -25,7 +25,7 @@ JSON Schemas: `mediflow_ai/schemas/`.
 1. **Pre-process** (IMAGE): OpenCV deskew / denoise / CLAHE / Otsu.
 2. **OCR**: PaddleOCR (en) if installed, else Tesseract; Bangla numerals → ASCII.
 3. **Extract**: rule-based NER (drug candidate, strength, dose, route, frequency incl. `1+0+1` / OD–QID / HS, duration).
-4. **Normalise**: RapidFuzz against `/api/internal/dictionary/export` (cached, hourly refresh). No match → null / conf 0.
+4. **Normalise**: RapidFuzz against `/api/internal/dictionary/export` (`{brands,generics,importVersion}` or legacy `{entries}`; cached, hourly refresh). No match → null / conf 0.
 5. **Calibrate**: isotonic map from `models/calibrator.json` if present; else identity.
 
 `UNREADABLE` when image quality / OCR yield is too low.
@@ -59,7 +59,8 @@ export MEDIFLOW_AI_S3_ACCESS_KEY=mediflow
 export MEDIFLOW_AI_S3_SECRET_KEY=mediflowsecret
 export MEDIFLOW_AI_S3_BUCKET=prescriptions
 export MEDIFLOW_AI_DICTIONARY_URL=http://localhost:8080/api/internal/dictionary/export
-export MEDIFLOW_AI_DICTIONARY_TOKEN=...          # shared with T08
+export MEDIFLOW_AI_DICTIONARY_TOKEN=...          # same value as MEDIFLOW_PHARMACY_INTERNAL_API_KEY
+export MEDIFLOW_AI_DICTIONARY_TOKEN_HEADER=X-Mediflow-Internal-Key  # default; matches pharmacy filter
 export MEDIFLOW_AI_WORKER_ENABLED=true
 uvicorn mediflow_ai.app:app --port 8090
 ```

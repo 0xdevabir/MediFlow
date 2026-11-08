@@ -137,7 +137,7 @@ public class LabOrderService {
    * Resolve catalogue entry by internal code, LOINC, exact name, or a unique name substring (active
    * only).
    */
-  LabTest resolveTest(String testCode) {
+  public LabTest resolveTest(String testCode) {
     String q = testCode.trim();
     Optional<LabTest> byCode = tests.findByCodeIgnoreCase(q);
     if (byCode.isPresent()) {

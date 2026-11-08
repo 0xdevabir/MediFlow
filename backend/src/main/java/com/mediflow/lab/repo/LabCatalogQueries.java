@@ -17,5 +17,14 @@ public interface LabCatalogQueries extends Repository<LabTest, UUID> {
   List<LabTest> findByActiveTrueOrderByNameAsc();
 
   List<LabTest> findByActiveTrueAndDirectAllowedTrueOrderByNameAsc();
+
+  Optional<LabTest> findByCodeIgnoreCase(String code);
+
+  Optional<LabTest> findByLoincCodeIgnoreCase(String loincCode);
+
+  Optional<LabTest> findFirstByActiveTrueAndNameIgnoreCase(String name);
+
+  List<LabTest> findByActiveTrueAndNameContainingIgnoreCaseOrderByNameAsc(String name);
 }
+
 

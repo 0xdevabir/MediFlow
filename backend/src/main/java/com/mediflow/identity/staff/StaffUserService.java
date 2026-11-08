@@ -15,6 +15,7 @@ import com.mediflow.shared.web.CurrentUser;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,6 +57,10 @@ public class StaffUserService {
       String email,
       String phone,
       String locale) {}
+
+  /** Row for the staff list UI (no PHI beyond account metadata). */
+  public record StaffListItem(
+      AppUser user, boolean locked, Optional<UUID> practitionerId, Optional<String> practitionerName) {}
 
   private final AppUserRepository users;
   private final PractitionerRepository practitioners;
@@ -196,6 +201,48 @@ public class StaffUserService {
   @Transactional(readOnly = true)
   public List<AppUser> listStaff() {
     return users.findAll().stream().filter(u -> !u.getRoles().contains(Role.ROLE_PATIENT)).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public AppUser getStaff(UUID userId) {
+    AppUser u = load(userId);
+    if (u.getRoles().contains(Role.ROLE_PATIENT)) {
+      throw new StaffValidationException(List.of("identity.staff.patientAccount"));
+    }
+    return u;
+  }
+
+  @Transactional(readOnly = true)
+  public List<StaffListItem> listStaffRows() {
+    Map<UUID, Practitioner> byUser =
+        practitioners.findAll().stream()
+            .filter(p -> p.getUserId() != null)
+            .collect(java.util.stream.Collectors.toMap(Practitioner::getUserId, p -> p, (a, b) -> a));
+    return listStaff().stream()
+        .sorted(java.util.Comparator.comparing(AppUser::getUsername, String.CASE_INSENSITIVE_ORDER))
+        .map(
+            u -> {
+              Practitioner p = byUser.get(u.getId());
+              return new StaffListItem(
+                  u,
+                  loginAttempts.isLocked(u.getId()),
+                  Optional.ofNullable(p).map(Practitioner::getId),
+                  Optional.ofNullable(p).map(Practitioner::getName));
+            })
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public Optional<Practitioner> practitionerForUser(UUID userId) {
+    return practitioners.findAll().stream()
+        .filter(p -> userId.equals(p.getUserId()))
+        .findFirst();
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isLocked(UUID userId) {
+    load(userId);
+    return loginAttempts.isLocked(userId);
   }
 
   private Set<Role> validRoles(Set<Role> roles) {

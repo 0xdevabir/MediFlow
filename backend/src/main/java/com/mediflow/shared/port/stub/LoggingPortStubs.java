@@ -2,9 +2,11 @@ package com.mediflow.shared.port.stub;
 
 import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
+import com.mediflow.shared.port.LabOrderPort;
 import com.mediflow.shared.port.NotificationPort;
 import com.mediflow.shared.port.ObjectStoragePort;
 import com.mediflow.shared.port.PatientAccessPort;
+import com.mediflow.shared.web.CurrentUser;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Instant;
@@ -15,7 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -74,10 +78,31 @@ public class LoggingPortStubs {
   @Bean
   @ConditionalOnMissingBean(PatientAccessPort.class)
   PatientAccessPort patientAccessPort() {
-    return (doctorId, patientId) -> {
-      log.debug("PatientAccess stub deny-by-default doctor={} patient={}", doctorId, patientId);
-      return false;
+    return new PatientAccessPort() {
+      @Override
+      public boolean isAssigned(UUID doctorId, UUID patientId) {
+        log.debug("PatientAccess stub deny-by-default doctor={} patient={}", doctorId, patientId);
+        return false;
+      }
+
+      @Override
+      public boolean isErAssigned(UUID erUserId, UUID patientId) {
+        log.debug("PatientAccess stub ER deny-by-default er={} patient={}", erUserId, patientId);
+        return false;
+      }
     };
+  }
+
+  /**
+   * Boot-only {@link LabOrderPort} until V2-08. Requires {@link CurrentUser} (always present in the
+   * app). Omitted from slim context runners that do not register CurrentUser.
+   */
+  @Bean
+  @ConditionalOnMissingBean(LabOrderPort.class)
+  @ConditionalOnBean({CurrentUser.class, ClockPort.class})
+  LabOrderPort labOrderPort(
+      ApplicationEventPublisher events, CurrentUser currentUser, ClockPort clock) {
+    return new NoOpLabOrderPort(events, currentUser, clock);
   }
 
   @Bean
@@ -89,7 +114,8 @@ public class LoggingPortStubs {
       public void put(String objectKey, InputStream data, long contentLength, String contentType) {
         try {
           store.put(objectKey, data.readAllBytes());
-          log.info("STORAGE stub put key={} type={} bytes={}", objectKey, contentType, contentLength);
+          log.info(
+              "STORAGE stub put key={} type={} bytes={}", objectKey, contentType, contentLength);
         } catch (Exception e) {
           throw new IllegalStateException("Failed to store object " + objectKey, e);
         }

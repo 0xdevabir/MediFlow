@@ -4,7 +4,9 @@ import com.mediflow.lab.domain.LabOrderDetail;
 import com.mediflow.lab.repo.LabPatientQueries;
 import com.mediflow.shared.domain.LabOrder;
 import com.mediflow.shared.domain.Patient;
+import com.mediflow.identity.access.AccessPolicy;
 import com.mediflow.shared.port.PatientAccessPort;
+import org.springframework.beans.factory.ObjectProvider;
 import com.mediflow.shared.web.CurrentUser;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,12 +24,17 @@ public class LabAccess {
   private final CurrentUser currentUser;
   private final LabPatientQueries patients;
   private final PatientAccessPort patientAccess;
+  private final ObjectProvider<AccessPolicy> accessPolicy;
 
   public LabAccess(
-      CurrentUser currentUser, LabPatientQueries patients, PatientAccessPort patientAccess) {
+      CurrentUser currentUser,
+      LabPatientQueries patients,
+      PatientAccessPort patientAccess,
+      ObjectProvider<AccessPolicy> accessPolicy) {
     this.currentUser = currentUser;
     this.patients = patients;
     this.patientAccess = patientAccess;
+    this.accessPolicy = accessPolicy;
   }
 
   public Optional<Patient> currentPatient() {
@@ -62,6 +69,10 @@ public class LabAccess {
 
   /** Patient: own orders. Lab tech / front desk / admin: staff. Doctor: assigned patients only. */
   public void requireCanViewOrder(LabOrder order, LabOrderDetail detail) {
+    AccessPolicy policy = accessPolicy.getIfAvailable();
+    if (policy != null && order != null && policy.canReadLabOrder(order.getId())) {
+      return;
+    }
     if (isLabTech() || isFrontDesk() || isAdmin()) {
       if (isLabTech() && detail != null && detail.getAssignedTechId() != null) {
         UUID me = currentUser.userId().orElse(null);

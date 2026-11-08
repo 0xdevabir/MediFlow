@@ -28,6 +28,9 @@ import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
 import com.mediflow.shared.port.NotificationPort;
 import com.mediflow.shared.port.ObjectStoragePort;
+import com.mediflow.shared.port.PatientQrPort;
+import java.util.Optional;
+import org.springframework.beans.factory.ObjectProvider;
 import com.mediflow.shared.repo.DiagnosticReportRepository;
 import com.mediflow.shared.repo.LabOrderRepository;
 import com.mediflow.shared.repo.SampleRepository;
@@ -68,6 +71,7 @@ public class LabWorkflowService {
   private final LabPatientQueries patients;
   private final LabStaffQueries staff;
   private final LabAccess access;
+  private final ObjectProvider<PatientQrPort> patientQr;
   private final ObjectStoragePort storage;
   private final NotificationPort notifications;
   private final ApplicationEventPublisher events;
@@ -89,6 +93,7 @@ public class LabWorkflowService {
       LabPatientQueries patients,
       LabStaffQueries staff,
       LabAccess access,
+      ObjectProvider<PatientQrPort> patientQr,
       ObjectStoragePort storage,
       NotificationPort notifications,
       ApplicationEventPublisher events,
@@ -108,6 +113,7 @@ public class LabWorkflowService {
     this.patients = patients;
     this.staff = staff;
     this.access = access;
+    this.patientQr = patientQr;
     this.storage = storage;
     this.notifications = notifications;
     this.events = events;
@@ -125,7 +131,7 @@ public class LabWorkflowService {
     if (order.getStatus() != LabOrderStatus.ORDERED) {
       throw new LabRuleException("lab.error.badStatus");
     }
-    if (!LabTokens.tokenMatches(detail.getQrToken(), presentedQrToken)) {
+    if (!identityConfirmed(order, detail, presentedQrToken)) {
       throw new LabRuleException("lab.error.qrMismatch");
     }
     UUID techId = access.requireUserId();
@@ -455,6 +461,24 @@ public class LabWorkflowService {
       }
     }
     return ids;
+  }
+
+
+  /**
+   * Accept either the order booking QR token or a patient-identity token from {@link
+   * PatientQrPort} (V2-03) when that bean is present.
+   */
+  private boolean identityConfirmed(
+      LabOrder order, LabOrderDetail detail, String presentedQrToken) {
+    if (LabTokens.tokenMatches(detail.getQrToken(), presentedQrToken)) {
+      return true;
+    }
+    PatientQrPort qr = patientQr.getIfAvailable();
+    if (qr == null || presentedQrToken == null || presentedQrToken.isBlank()) {
+      return false;
+    }
+    Optional<UUID> resolved = qr.resolvePatientId(presentedQrToken.trim());
+    return resolved.isPresent() && resolved.get().equals(order.getPatientId());
   }
 
   private LabOrder loadOrder(UUID id) {

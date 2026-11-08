@@ -5,6 +5,7 @@ import com.mediflow.clinical.consultation.service.ConsultationService.Consultati
 import com.mediflow.clinical.vitals.service.VitalCatalogService;
 import com.mediflow.shared.domain.Encounter;
 import com.mediflow.shared.domain.VitalObservation;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -91,8 +92,24 @@ public class ConsultationController {
       @PathVariable UUID encounterId,
       @RequestParam String testCode,
       RedirectAttributes redirect) {
-    consultations.orderLab(encounterId, testCode);
-    redirect.addFlashAttribute("successKey", "clinical.consult.labRequested");
+    UUID orderId = consultations.orderLab(encounterId, testCode);
+    boolean nil = orderId.getMostSignificantBits() == 0L && orderId.getLeastSignificantBits() == 0L;
+    redirect.addFlashAttribute(
+        "successKey",
+        nil ? "clinical.consult.labRequestedPending" : "clinical.consult.labOrdered");
+    redirect.addFlashAttribute("labOrderId", orderId);
+    redirect.addFlashAttribute("labOrdersHref", "/lab/encounters/" + encounterId + "/orders");
+    return "redirect:/clinical/consultations/" + encounterId;
+  }
+
+
+  @PostMapping("/{encounterId}/follow-up")
+  public String scheduleFollowUp(
+      @PathVariable UUID encounterId,
+      @RequestParam("followUpDate") LocalDate followUpDate,
+      RedirectAttributes redirect) {
+    consultations.scheduleFollowUp(encounterId, followUpDate);
+    redirect.addFlashAttribute("successKey", "clinical.consult.followUpSaved");
     return "redirect:/clinical/consultations/" + encounterId;
   }
 
@@ -121,3 +138,4 @@ public class ConsultationController {
     return series;
   }
 }
+

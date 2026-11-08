@@ -1,15 +1,17 @@
 package com.mediflow.clinical.consultation.service;
 
 import com.mediflow.clinical.consultation.domain.AllergyConfirmEntity;
+import com.mediflow.clinical.consultation.domain.FollowUpEntity;
 import com.mediflow.clinical.consultation.domain.Icd10Entity;
 import com.mediflow.clinical.consultation.port.ClinicalAccess;
-import com.mediflow.clinical.consultation.port.LabOrderPort;
+import com.mediflow.shared.port.LabOrderPort;
 import com.mediflow.clinical.consultation.repo.AllergyConfirmRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalAllergyRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalAppointmentRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalConditionRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalDiagnosticReportRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalEncounterRepository;
+import com.mediflow.clinical.consultation.repo.FollowUpRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalLabOrderRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalNoteQueryRepository;
 import com.mediflow.clinical.consultation.repo.ClinicalPractitionerRepository;
@@ -33,11 +35,13 @@ import com.mediflow.shared.domain.Prescription;
 import com.mediflow.shared.domain.PrescriptionItem;
 import com.mediflow.shared.domain.PrescriptionStatus;
 import com.mediflow.shared.domain.VitalObservation;
+import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
 import com.mediflow.shared.repo.DrugGenericRepository;
 import com.mediflow.shared.repo.PatientRepository;
 import com.mediflow.shared.web.CurrentUser;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -51,6 +55,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +80,8 @@ public class ConsultationService {
   private final ClinicalLabOrderRepository labOrders;
   private final ClinicalDiagnosticReportRepository reports;
   private final ClinicalVitalObservationRepository observations;
+  private final FollowUpRepository followUps;
+  private final ApplicationEventPublisher events;
   private final LabOrderPort labOrdersPort;
   private final ClinicalAccess access;
   private final LabReportBadgeListener badges;
@@ -98,6 +105,8 @@ public class ConsultationService {
       ClinicalLabOrderRepository labOrders,
       ClinicalDiagnosticReportRepository reports,
       ClinicalVitalObservationRepository observations,
+      FollowUpRepository followUps,
+      ApplicationEventPublisher events,
       LabOrderPort labOrdersPort,
       ClinicalAccess access,
       LabReportBadgeListener badges,
@@ -119,6 +128,8 @@ public class ConsultationService {
     this.labOrders = labOrders;
     this.reports = reports;
     this.observations = observations;
+    this.followUps = followUps;
+    this.events = events;
     this.labOrdersPort = labOrdersPort;
     this.access = access;
     this.badges = badges;
@@ -142,6 +153,48 @@ public class ConsultationService {
     }
     return encounters.findByDoctorIdAndStatusOrderByStartedAtDesc(
         me.get().getId(), EncounterStatus.IN_PROGRESS);
+  }
+
+
+  @PreAuthorize("hasAnyRole('DOCTOR','NURSE','ADMIN','ER')")
+  @Transactional(readOnly = true)
+  public List<Encounter> listOpenTodayForCurrentDoctor() {
+    return listOpenForCurrentDoctor().stream()
+        .filter(
+            e ->
+                e.getStartedAt() != null
+                    && e.getStartedAt()
+                        .atZone(java.time.ZoneOffset.UTC)
+                        .toLocalDate()
+                        .equals(clock.now().atZone(java.time.ZoneOffset.UTC).toLocalDate()))
+        .toList();
+  }
+
+  /** Open encounters that still have no vital observations (nurse worklist). */
+  @PreAuthorize("hasAnyRole('NURSE','ADMIN','ER','DOCTOR')")
+  @Transactional(readOnly = true)
+  public List<Encounter> listVitalsPending(int limit) {
+    int cap = Math.max(1, Math.min(limit, 50));
+    List<Encounter> open =
+        encounters.findAll().stream()
+            .filter(e -> e.getStatus() == EncounterStatus.IN_PROGRESS)
+            .sorted(
+                (a, b) -> {
+                  if (a.getStartedAt() == null) return 1;
+                  if (b.getStartedAt() == null) return -1;
+                  return b.getStartedAt().compareTo(a.getStartedAt());
+                })
+            .toList();
+    List<Encounter> pending = new ArrayList<>();
+    for (Encounter e : open) {
+      if (observations.findByEncounterIdOrderByRecordedAtAsc(e.getId()).isEmpty()) {
+        pending.add(e);
+        if (pending.size() >= cap) {
+          break;
+        }
+      }
+    }
+    return pending;
   }
 
   @PreAuthorize("hasAnyRole('DOCTOR','ADMIN','ER')")
@@ -225,7 +278,8 @@ public class ConsultationService {
         enc.getId(),
         Map.of());
 
-    return new ConsultationView(enc, patient, allergyViews, latest.orElse(null), dx, meds, lab, vitals);
+    return new ConsultationView(enc, patient, allergyViews, latest.orElse(null), dx, meds, lab, vitals,
+        followUps.findByEncounterId(enc.getId()).orElse(null));
   }
 
   @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
@@ -337,6 +391,37 @@ public class ConsultationService {
         enc.getId(),
         Map.of("testCode", testCode.trim(), "orderId", orderId.toString()));
     return orderId;
+  }
+
+
+  @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+  @Transactional
+  public FollowUpEntity scheduleFollowUp(UUID encounterId, LocalDate followUpDate) {
+    Encounter enc = requireEncounter(encounterId);
+    requireConsult(enc.getPatientId());
+    if (followUpDate == null) {
+      throw new IllegalArgumentException("followUpDate required");
+    }
+    Optional<ClinicalNote> latest = notes.findFirstByEncounterIdOrderByNoteVersionDesc(enc.getId());
+    FollowUpEntity row =
+        followUps.findByEncounterId(enc.getId()).orElseGet(FollowUpEntity::new);
+    row.setEncounterId(enc.getId());
+    row.setPatientId(enc.getPatientId());
+    row.setFollowUpDate(followUpDate);
+    row.setScheduledBy(currentUser.requireUserId());
+    latest.map(ClinicalNote::getId).ifPresent(row::setNoteId);
+    FollowUpEntity saved = followUps.save(row);
+    events.publishEvent(
+        new DomainEvents.FollowUpScheduled(
+            enc.getId(), enc.getPatientId(), followUpDate, clock.now()));
+    audit.record(
+        currentUser.requireUserId(),
+        enc.getPatientId(),
+        "FOLLOW_UP_SCHEDULED",
+        "Encounter",
+        enc.getId(),
+        Map.of("followUpDate", followUpDate.toString(), "followUpId", saved.getId().toString()));
+    return saved;
   }
 
   @PreAuthorize("hasAnyRole('DOCTOR','ADMIN','NURSE')")
@@ -486,5 +571,6 @@ public class ConsultationService {
       List<ConditionDx> diagnoses,
       List<ActiveMed> activeMeds,
       List<LabReportView> labReports,
-      List<VitalObservation> vitals) {}
+      List<VitalObservation> vitals,
+      FollowUpEntity followUp) {}
 }

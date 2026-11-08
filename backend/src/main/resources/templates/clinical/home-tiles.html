@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout/base :: head('clinical.home.title')}"></head>
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
+<div th:replace="~{layout/base :: nav}"></div>
+<main id="main" class="container mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='clinical.home.title', subtitleKey=null)}"></div>
+
+  <th:block th:fragment="doctorTiles">
+    <section class="mb-4" aria-labelledby="clinical-doctor-tiles" sec:authorize="hasAnyRole('DOCTOR','ADMIN')">
+      <h2 id="clinical-doctor-tiles" class="h5 mb-3" th:text="#{clinical.home.openToday}">Open encounters today</h2>
+      <div class="mf-role-grid mf-role-grid-3">
+        <div class="mf-tile">
+          <h3 class="mf-tile-title" th:text="#{clinical.home.openToday}">Open encounters today</h3>
+          <p class="mf-tile-meta">
+            <span th:text="${openToday != null ? #lists.size(openToday) : 0}">0</span>
+          </p>
+          <a class="btn btn-sm btn-teal" th:href="@{/clinical/consultations}" th:text="#{clinical.home.consults}">Open</a>
+        </div>
+        <div class="mf-tile">
+          <h3 class="mf-tile-title" th:text="#{clinical.home.labBadges}">Unread lab reports</h3>
+          <p class="mf-tile-meta">
+            <span th:replace="~{layout/fragments/status-badge :: badge(level='NORMAL', label=${labBadgeCount != null ? labBadgeCount : 0})}"></span>
+          </p>
+          <a class="btn btn-sm btn-outline-secondary" th:href="@{/clinical/consultations}" th:text="#{clinical.consult.open}">Open</a>
+        </div>
+      </div>
+      <div th:if="${openToday != null and !#lists.isEmpty(openToday)}" class="mf-panel mt-3">
+        <table class="table table-sm mf-table mb-0">
+          <thead>
+          <tr>
+            <th th:text="#{clinical.consult.encounter}">Encounter</th>
+            <th th:text="#{clinical.consult.patient}">Patient</th>
+            <th th:text="#{clinical.consult.started}">Started</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="e : ${openToday}">
+            <td class="small" th:text="${e.id}"></td>
+            <td class="small" th:text="${e.patientId}"></td>
+            <td class="small" th:text="${e.startedAt}"></td>
+            <td>
+              <a class="btn btn-sm btn-primary" th:href="@{/clinical/consultations/{id}(id=${e.id})}"
+                 th:text="#{clinical.consult.open}">Open</a>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${openToday == null or #lists.isEmpty(openToday)}"
+           th:replace="~{layout/fragments/empty-state :: empty(titleKey='clinical.consult.none', bodyKey=null)}"></div>
+    </section>
+  </th:block>
+
+  <th:block th:fragment="nurseTiles">
+    <section class="mb-4" aria-labelledby="clinical-nurse-tiles" sec:authorize="hasAnyRole('NURSE','ADMIN','ER')">
+      <h2 id="clinical-nurse-tiles" class="h5 mb-3" th:text="#{clinical.home.vitalsPending}">Vitals pending</h2>
+      <div class="mf-role-grid">
+        <div class="mf-tile">
+          <h3 class="mf-tile-title" th:text="#{clinical.home.vitalsPending}">Vitals pending</h3>
+          <p class="mf-tile-meta">
+            <span th:text="${vitalsPending != null ? #lists.size(vitalsPending) : 0}">0</span>
+          </p>
+          <a class="btn btn-sm btn-teal" th:href="@{/queue}" th:text="#{clinical.home.vitals}">Enter vitals</a>
+        </div>
+      </div>
+      <ul class="list-group mt-3" th:if="${vitalsPending != null and !#lists.isEmpty(vitalsPending)}">
+        <li class="list-group-item d-flex justify-content-between align-items-center"
+            th:each="e : ${vitalsPending}">
+          <span class="small" th:text="|${e.id} · ${e.patientId}|">encounter</span>
+          <a class="btn btn-sm btn-outline-primary"
+             th:href="@{/clinical/vitals/entry/{id}(id=${e.id})}"
+             th:text="#{clinical.home.vitals}">Enter vitals</a>
+        </li>
+      </ul>
+      <div th:if="${vitalsPending == null or #lists.isEmpty(vitalsPending)}"
+           th:replace="~{layout/fragments/empty-state :: empty(titleKey='clinical.consult.none', bodyKey=null)}"></div>
+    </section>
+  </th:block>
+
+  <th:block th:replace="~{::doctorTiles}"></th:block>
+  <th:block th:replace="~{::nurseTiles}"></th:block>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

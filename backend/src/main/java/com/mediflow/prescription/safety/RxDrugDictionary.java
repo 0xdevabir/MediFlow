@@ -7,9 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Drug dictionary as seen by the prescription module (generic level). T08 owns the data; the
- * default implementation {@link RepositoryRxDrugDictionary} reads the shared drug_* tables. T08
- * may later provide its own (Redis-cached) bean of this type.
+ * Drug dictionary facade for SafetyEngine / item editor. Production bean is {@link
+ * PortRxDrugDictionary}, adapting shared {@link com.mediflow.shared.port.DrugDictionaryPort}.
  */
 public interface RxDrugDictionary {
 

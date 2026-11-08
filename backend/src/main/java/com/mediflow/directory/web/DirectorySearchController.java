@@ -28,15 +28,17 @@ public class DirectorySearchController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) UUID hospitalId,
       @RequestParam(required = false) String department,
+      @RequestParam(required = false) String specialty,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       Model model) {
-    SearchCriteria criteria = new SearchCriteria(q, hospitalId, department, date);
+    SearchCriteria criteria = new SearchCriteria(q, hospitalId, department, specialty, date);
     SearchResult result = queries.search(criteria);
     model.addAttribute("pageTitleKey", "directory.search.title");
     model.addAttribute("criteria", criteria);
     model.addAttribute("result", result);
     model.addAttribute("hospitals", queries.hospitalOptions());
     model.addAttribute("departments", queries.clinicalDepartmentNames());
+    model.addAttribute("specialties", queries.specialtyNames());
     model.addAttribute("directTests", queries.directTests());
     model.addAttribute("packages", queries.packages(hospitalId));
     return "directory/search";

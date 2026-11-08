@@ -1,70 +1,99 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('directory.tests.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0" th:text="#{directory.tests.title}">Direct lab tests</h1>
-    <a class="btn btn-outline-secondary btn-sm" th:href="@{/directory/search}" th:text="#{directory.search.back}">Back to search</a>
-  </div>
-  <p class="text-muted" th:text="#{directory.tests.intro}">Book without a doctor referral. Prices shown before booking.</p>
 
-  <form class="row g-2 align-items-end mb-4" method="get" th:action="@{/directory/tests}">
-    <div class="col-md-4">
-      <label class="form-label" for="hospitalId" th:text="#{directory.search.hospital}">Hospital</label>
-      <select class="form-select" id="hospitalId" name="hospitalId">
-        <option value="" th:text="#{directory.search.any}">Any</option>
-        <option th:each="h : ${hospitals}" th:value="${h.id()}" th:text="${h.label()}"
-                th:selected="${hospitalId != null and hospitalId.equals(h.id())}"></option>
-      </select>
+  <header class="mb-4">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+      <div>
+        <h1 class="mf-page-title" th:text="#{directory.tests.title}">Direct lab tests</h1>
+        <p class="mf-page-subtitle mb-0" th:text="#{directory.tests.intro}">Book without a doctor referral.</p>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm" th:href="@{/directory/search}"
+         th:text="#{directory.search.back}">Back to search</a>
     </div>
-    <div class="col-md-2">
-      <button class="btn btn-teal" type="submit" th:text="#{directory.search.submit}">Filter</button>
+  </header>
+
+  <form class="mf-panel mb-4" method="get" th:action="@{/directory/tests}">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-6 col-lg-4">
+        <label class="form-label" for="hospitalId" th:text="#{directory.search.hospital}">Hospital</label>
+        <select class="form-select" id="hospitalId" name="hospitalId">
+          <option value="" th:text="#{directory.search.any}">Any</option>
+          <option th:each="h : ${hospitals}" th:value="${h.id()}" th:text="${h.label()}"
+                  th:selected="${hospitalId != null and hospitalId.equals(h.id())}"></option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-teal" type="submit" th:text="#{directory.search.submit}">Filter</button>
+      </div>
     </div>
   </form>
 
-  <section class="mb-4">
-    <h2 class="h5" th:text="#{directory.tests.list}">Approved direct tests</h2>
-    <div class="table-responsive">
-      <table class="table table-sm align-middle bg-white">
+  <p class="mf-tile-meta" th:text="#{directory.tests.costNote}">Prices shown before booking when available.</p>
+
+  <section class="mb-5" aria-labelledby="directory-tests-list">
+    <h2 id="directory-tests-list" class="h5 mb-3" th:text="#{directory.tests.list}">Approved direct tests</h2>
+    <div th:if="${directTests.isEmpty()}"
+         th:replace="~{layout/fragments/empty-state :: empty('directory.tests.empty', null)}"></div>
+    <div class="table-responsive mf-panel p-0" th:if="${!directTests.isEmpty()}">
+      <table class="table mf-data-table mf-table-stack align-middle mb-0">
         <thead>
         <tr>
           <th th:text="#{directory.tests.code}">Code</th>
           <th th:text="#{directory.tests.name}">Name</th>
           <th th:text="#{directory.tests.loinc}">LOINC</th>
           <th class="text-end" th:text="#{directory.tests.price}">Price</th>
+          <th></th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="t : ${directTests}">
-          <td th:text="${t.code()}"></td>
-          <td th:text="${t.name()}"></td>
-          <td th:text="${t.loincCode()}"></td>
-          <td class="text-end" th:text="${t.price()}"></td>
+          <td th:attr="data-label=#{directory.tests.code}" th:text="${t.code()}"></td>
+          <td th:attr="data-label=#{directory.tests.name}" th:text="${t.name()}"></td>
+          <td th:attr="data-label=#{directory.tests.loinc}"
+              th:text="${t.loincCode() != null ? t.loincCode() : '—'}"></td>
+          <td class="text-end" th:attr="data-label=#{directory.tests.price}">
+            <span th:if="${t.hasPrice()}" th:text="${t.price()}"></span>
+            <span th:unless="${t.hasPrice()}" th:text="#{directory.tests.price.na}">—</span>
+          </td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-teal" th:href="@{/lab/direct}"
+               th:text="#{directory.tests.book}">Book test</a>
+          </td>
         </tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <section>
-    <h2 class="h5" th:text="#{directory.packages.heading}">Packages</h2>
-    <p class="text-muted" th:if="${packages.isEmpty()}" th:text="#{directory.packages.empty}">No packages.</p>
-    <div class="row g-3">
+  <section aria-labelledby="directory-packages">
+    <h2 id="directory-packages" class="h5 mb-3" th:text="#{directory.packages.heading}">Packages</h2>
+    <div th:if="${packages.isEmpty()}"
+         th:replace="~{layout/fragments/empty-state :: empty('directory.packages.empty', null)}"></div>
+    <div class="row g-3" th:if="${!packages.isEmpty()}">
       <div class="col-md-6" th:each="p : ${packages}">
-        <article class="border rounded p-3 bg-white h-100">
-          <h3 class="h6 mb-1" th:text="${p.name()}">Package</h3>
-          <p class="small text-muted mb-2">
+        <article class="mf-tile h-100">
+          <h3 class="mf-tile-title" th:text="${p.name()}">Package</h3>
+          <p class="mf-tile-meta">
             <span th:if="${p.hospitalName() != null}" th:text="${p.hospitalName()}"></span>
             <span th:if="${p.hospitalName() == null}" th:text="#{directory.packages.allHospitals}">All hospitals</span>
-            <span> · </span>
-            <span th:text="${p.price()}"></span>
           </p>
-          <ul class="small mb-0">
+          <p class="mb-2" th:if="${p.hasPrice()}">
+            <span class="fw-semibold" th:text="${p.price()}"></span>
+            <span class="text-muted" th:text="' ' + #{directory.tests.price.unit}">BDT</span>
+          </p>
+          <p class="small text-muted" th:unless="${p.hasPrice()}" th:text="#{directory.tests.price.na}">—</p>
+          <ul class="small mb-3">
             <li th:each="t : ${p.tests()}" th:text="${t.name() + ' (' + t.code() + ')'}"></li>
           </ul>
+          <a class="btn btn-sm btn-teal"
+             th:href="@{/lab/direct(hospitalId=${p.hospitalId()})}"
+             th:text="#{directory.packages.book}">Book package</a>
         </article>
       </div>
     </div>

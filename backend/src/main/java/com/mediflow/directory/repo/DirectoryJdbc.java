@@ -183,6 +183,20 @@ public class DirectoryJdbc {
         String.class);
   }
 
+  /** Distinct specialties for active practitioners with a clinical role (public filter list). */
+  public List<String> specialtyNames() {
+    return jdbc.queryForList(
+        "SELECT DISTINCT p.specialty FROM practitioner p"
+            + " JOIN practitioner_role r ON r.practitioner_id = p.id"
+            + " JOIN department d ON d.id = r.department_id"
+            + " JOIN hospital h ON h.id = r.hospital_id"
+            + " WHERE r.active AND h.active AND d.clinical"
+            + " AND p.specialty IS NOT NULL AND btrim(p.specialty) <> ''"
+            + " ORDER BY p.specialty",
+        new MapSqlParameterSource(),
+        String.class);
+  }
+
   public void updateDepartmentClinical(UUID id, boolean clinical) {
     jdbc.update(
         "UPDATE department SET clinical = :c WHERE id = :id",
@@ -247,6 +261,10 @@ public class DirectoryJdbc {
     if (c.normalizedDepartment() != null) {
       sql.append(" AND lower(d.name) = lower(:dept)");
       p.addValue("dept", c.normalizedDepartment());
+    }
+    if (c.normalizedSpecialty() != null) {
+      sql.append(" AND lower(p.specialty) = lower(:specialty)");
+      p.addValue("specialty", c.normalizedSpecialty());
     }
     if (c.normalizedQuery() != null) {
       sql.append(

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!--/*
+  Admin (and public) directory shortcut tiles for role home.
+  V2-01 home.html may th:replace these once wired — see docs/plan/requests/V2-04.md.
+*/-->
+<div th:fragment="admin" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{directory.home.tile.title}">Hospital directory</h3>
+  <p class="mf-tile-meta" th:text="#{directory.home.tile.body}">
+    Search public hospitals and doctors, or maintain directory data.
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-teal" th:href="@{/directory/admin}"
+       th:text="#{directory.home.tile.adminCta}">Manage directory</a>
+    <a class="btn btn-sm btn-outline-secondary" th:href="@{/directory/search}"
+       th:text="#{directory.home.tile.cta}">Open directory</a>
+  </div>
+</div>
+
+<div th:fragment="public" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{directory.home.tile.title}">Hospital directory</h3>
+  <p class="mf-tile-meta" th:text="#{directory.search.intro}">
+    Search hospitals and doctors without signing in.
+  </p>
+  <a class="btn btn-sm btn-teal" th:href="@{/directory/search}"
+     th:text="#{directory.home.tile.cta}">Open directory</a>
+</div>
+</body>
+</html>

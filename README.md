@@ -8,7 +8,19 @@ Security-first outpatient coordination platform (Patient → Front desk → Nurs
 - Docker / Docker Compose
 - Maven Wrapper (`backend/mvnw`)
 
-## Quick start (dev)
+## Quick start: one command
+
+```bash
+make up        # creates .env if missing, builds + starts infra, backend, AI api + worker
+make logs-backend
+make down      # stop (data kept) · make clean = also wipe DB/MinIO volumes · make help = all targets
+```
+
+App: http://localhost:8080 · AI: http://localhost:8000/health · Mailpit: http://localhost:8025 · RabbitMQ: http://localhost:15672 · MinIO: http://localhost:9001
+
+## Quick start (backend from IDE)
+
+`make infra` then `make run-backend`, or manually:
 
 ```bash
 # 1. Infrastructure

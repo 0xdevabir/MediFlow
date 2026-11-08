@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.tech.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3" th:text="${view.order().itemName()}">Order</h1>
-  <p class="text-muted">
-    <span th:text="${view.order().patientName()}">Patient</span> ·
-    <span th:text="${view.order().status()}">STATUS</span> ·
-    <span th:text="${view.order().orderType()}">TYPE</span>
-  </p>
+  <header class="mb-4">
+    <h1 class="mf-page-title" th:text="${view.order().itemName()}">Order</h1>
+    <p class="mf-page-subtitle mb-0">
+      <span th:text="${view.order().patientName()}">Patient</span> ·
+      <span th:replace="~{layout/fragments/status-badge :: badge(level='NORMAL', label=${view.order().status()})}"></span> ·
+      <span th:text="${view.order().orderType()}">TYPE</span>
+    </p>
+  </header>
+
   <p th:if="${view.sampleBarcode() != null}">
     <strong th:text="#{lab.tech.barcode}">Barcode</strong>:
     <code th:text="${view.sampleBarcode()}"></code>
@@ -22,15 +26,16 @@
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
       <label class="form-label" th:text="#{lab.tech.qr}">QR</label>
       <input class="form-control" name="qrToken" required autocomplete="off"/>
+      <p class="small text-muted" th:text="#{lab.tech.qrHint}">Booking QR or patient identity QR.</p>
       <p class="small text-muted">Dev hint token: <code th:text="${qrToken}"></code></p>
-      <button class="btn btn-primary align-self-start" type="submit" th:text="#{lab.tech.collect}">Collect</button>
+      <button class="btn btn-teal align-self-start" type="submit" th:text="#{lab.tech.collect}">Collect</button>
     </form>
   </section>
 
   <section class="mb-4" th:if="${view.canReceive()}">
     <form method="post" th:action="@{/lab/queue/{id}/receive(id=${view.order().orderId()})}">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-      <button class="btn btn-primary" type="submit" th:text="#{lab.tech.receive}">Receive</button>
+      <button class="btn btn-teal" type="submit" th:text="#{lab.tech.receive}">Receive</button>
     </form>
   </section>
 
@@ -70,7 +75,7 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-primary align-self-start" type="submit" th:text="#{lab.tech.upload}">Upload</button>
+      <button class="btn btn-teal align-self-start" type="submit" th:text="#{lab.tech.upload}">Upload</button>
     </form>
   </section>
 

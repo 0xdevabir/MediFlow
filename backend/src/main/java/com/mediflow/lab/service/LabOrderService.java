@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
@@ -76,7 +77,36 @@ public class LabOrderService {
     this.clock = clock;
   }
 
-  /** Doctor orders one or more tests against an open encounter. */
+  /**
+   * Shared doctor-order path used by {@code /lab/encounters/{id}/orders} and {@link
+   * com.mediflow.shared.port.LabOrderPort}. Resolves {@code testCode} (code / LOINC / name), creates
+   * a real {@code lab_order}, publishes {@code LabOrderCreated} (+ {@code LabOrderRequested} for
+   * listeners still expecting the consult event), and returns the order id (never nil UUID).
+   */
+  @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+  @Transactional
+  public UUID requestOrderByTestCode(
+      UUID encounterId, UUID patientId, UUID hospitalId, String testCode) {
+    if (testCode == null || testCode.isBlank()) {
+      throw new LabRuleException("lab.error.noTests");
+    }
+    Encounter encounter = requireEncounterForOrder(encounterId, patientId, hospitalId);
+    LabTest test = resolveTest(testCode.trim());
+    UUID actor = access.requireUserId();
+    Instant now = clock.now();
+    LabOrder order = createDoctorOrder(encounter, test, actor, now, LabTokens.bookingRef());
+    events.publishEvent(
+        new DomainEvents.LabOrderRequested(
+            encounter.getId(),
+            encounter.getPatientId(),
+            encounter.getHospitalId(),
+            testCode.trim(),
+            actor,
+            now));
+    return order.getId();
+  }
+
+  /** Doctor orders one or more tests against an open encounter (same persistence as the port). */
   @PreAuthorize("hasRole('DOCTOR')")
   @Transactional
   public List<LabOrder> orderForEncounter(UUID encounterId, List<UUID> testIds) {
@@ -98,38 +128,89 @@ public class LabOrderService {
       if (!test.getActive()) {
         throw new LabRuleException("lab.error.testInactive");
       }
-      LabOrder order =
-          saveOrder(
-              encounter.getPatientId(),
-              encounter.getHospitalId(),
-              encounter.getId(),
-              test.getId(),
-              null,
-              OrderType.DOCTOR,
-              actor,
-              now);
-      saveDetail(
-          order,
-          bookingRef,
-          actor,
-          BookingChannel.DOCTOR,
-          null,
-          null,
-          test.getPrice() == null ? BigDecimal.ZERO : test.getPrice());
-      publishCreated(order, now);
-      created.add(order);
-      audit.record(
-          actor,
-          order.getPatientId(),
-          "LAB_ORDER_CREATED",
-          "lab_order",
-          order.getId(),
-          Map.of(
-              "orderType", OrderType.DOCTOR.name(),
-              "testId", test.getId().toString(),
-              "encounterId", encounterId.toString()));
+      created.add(createDoctorOrder(encounter, test, actor, now, bookingRef));
     }
     return created;
+  }
+
+  /**
+   * Resolve catalogue entry by internal code, LOINC, exact name, or a unique name substring (active
+   * only).
+   */
+  public LabTest resolveTest(String testCode) {
+    String q = testCode.trim();
+    Optional<LabTest> byCode = tests.findByCodeIgnoreCase(q);
+    if (byCode.isPresent()) {
+      return requireActive(byCode.get());
+    }
+    Optional<LabTest> byLoinc = tests.findByLoincCodeIgnoreCase(q);
+    if (byLoinc.isPresent()) {
+      return requireActive(byLoinc.get());
+    }
+    Optional<LabTest> byName = tests.findFirstByActiveTrueAndNameIgnoreCase(q);
+    if (byName.isPresent()) {
+      return byName.get();
+    }
+    List<LabTest> partial = tests.findByActiveTrueAndNameContainingIgnoreCaseOrderByNameAsc(q);
+    if (partial.size() == 1) {
+      return partial.get(0);
+    }
+    throw new LabRuleException("lab.error.testNotFound");
+  }
+
+  private static LabTest requireActive(LabTest test) {
+    if (!test.getActive()) {
+      throw new LabRuleException("lab.error.testInactive");
+    }
+    return test;
+  }
+
+  private Encounter requireEncounterForOrder(UUID encounterId, UUID patientId, UUID hospitalId) {
+    Encounter encounter =
+        encounters
+            .findById(encounterId)
+            .orElseThrow(() -> new LabRuleException("lab.error.encounterNotFound"));
+    if (patientId != null && !patientId.equals(encounter.getPatientId())) {
+      throw new LabRuleException("lab.error.encounterMismatch");
+    }
+    if (hospitalId != null && !hospitalId.equals(encounter.getHospitalId())) {
+      throw new LabRuleException("lab.error.encounterMismatch");
+    }
+    return encounter;
+  }
+
+  private LabOrder createDoctorOrder(
+      Encounter encounter, LabTest test, UUID actor, Instant now, String bookingRef) {
+    LabOrder order =
+        saveOrder(
+            encounter.getPatientId(),
+            encounter.getHospitalId(),
+            encounter.getId(),
+            test.getId(),
+            null,
+            OrderType.DOCTOR,
+            actor,
+            now);
+    saveDetail(
+        order,
+        bookingRef,
+        actor,
+        BookingChannel.DOCTOR,
+        null,
+        null,
+        test.getPrice() == null ? BigDecimal.ZERO : test.getPrice());
+    publishCreated(order, now);
+    audit.record(
+        actor,
+        order.getPatientId(),
+        "LAB_ORDER_CREATED",
+        "lab_order",
+        order.getId(),
+        Map.of(
+            "orderType", OrderType.DOCTOR.name(),
+            "testId", test.getId().toString(),
+            "encounterId", encounter.getId().toString()));
+    return order;
   }
 
   /** Signed-in patient books direct-allowed tests/packages for themself. */

@@ -106,7 +106,8 @@ public class LabQueryService {
    * Patient report view: values and PDF only after verification (safety invariant). Staff/doctor may
    * see draft values when they can view the order.
    */
-  @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','LAB_TECH','FRONT_DESK','ADMIN')")
+  @PreAuthorize(
+      "@access.canReadLabOrder(#labOrderId) or hasAnyRole('FRONT_DESK','ADMIN')")
   @Transactional(readOnly = true)
   public LabViews.ReportView report(UUID labOrderId) {
     LabOrder order =
@@ -178,7 +179,7 @@ public class LabQueryService {
         .toList();
   }
 
-  @PreAuthorize("hasAnyRole('LAB_TECH','ADMIN')")
+  @PreAuthorize("@access.canReadLabOrder(#labOrderId) or hasRole('ADMIN')")
   @Transactional(readOnly = true)
   public LabViews.TechOrderView techOrder(UUID labOrderId) {
     LabOrder order =
@@ -218,7 +219,8 @@ public class LabQueryService {
   }
 
   /** QR token for printing — lab tech / front desk only. */
-  @PreAuthorize("hasAnyRole('LAB_TECH','FRONT_DESK','ADMIN')")
+  @PreAuthorize(
+      "@access.canReadLabOrder(#labOrderId) or hasAnyRole('FRONT_DESK','ADMIN')")
   @Transactional(readOnly = true)
   public String qrToken(UUID labOrderId) {
     LabOrder order =

@@ -1,22 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.reports.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-2" th:text="${report.order().itemName()}">Report</h1>
-  <p class="text-muted">
-    <span th:text="${report.order().status()}">STATUS</span>
-    <span th:if="${report.released()}" class="ms-2">
-      <span th:text="#{lab.reports.verifiedAt}">Verified</span>:
-      <span th:text="${report.verifiedAt()}">—</span>
-    </span>
-  </p>
+  <header class="mb-4">
+    <h1 class="mf-page-title" th:text="${report.order().itemName()}">Report</h1>
+    <p class="mf-page-subtitle mb-0">
+      <span th:replace="~{layout/fragments/status-badge :: badge(level=${report.critical() ? 'CRITICAL' : (report.abnormal() ? 'URGENT' : 'NORMAL')}, label=${report.order().status()})}"></span>
+      <span th:if="${report.released()}" class="ms-2">
+        <span th:text="#{lab.reports.verifiedAt}">Verified</span>:
+        <span th:text="${report.verifiedAt()}">—</span>
+      </span>
+    </p>
+  </header>
 
   <div th:if="${!report.released()}" class="alert alert-info" th:text="#{lab.reports.pendingVerify}">Waiting for verification.</div>
 
-  <div th:if="${showSeeDoctor}" class="alert alert-warning">
+  <div th:if="${showSeeDoctor}" class="alert alert-warning" role="alert">
     <p class="mb-2" th:text="#{lab.reports.seeDoctor}">Please see a doctor.</p>
     <a class="btn btn-sm btn-warning" th:href="@{/appointments}" th:text="#{lab.reports.bookDoctor}">Book</a>
   </div>

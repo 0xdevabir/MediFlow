@@ -32,6 +32,8 @@ import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
 import com.mediflow.shared.port.NotificationPort;
 import com.mediflow.shared.port.ObjectStoragePort;
+import com.mediflow.shared.port.PatientQrPort;
+import org.springframework.beans.factory.ObjectProvider;
 import com.mediflow.shared.repo.DiagnosticReportRepository;
 import com.mediflow.shared.repo.LabOrderRepository;
 import com.mediflow.shared.repo.SampleRepository;
@@ -64,6 +66,7 @@ class LabWorkflowServiceTest {
   @Mock LabPatientQueries patients;
   @Mock LabStaffQueries staff;
   @Mock LabAccess access;
+  @Mock ObjectProvider<PatientQrPort> patientQr;
   @Mock ObjectStoragePort storage;
   @Mock NotificationPort notifications;
   @Mock ApplicationEventPublisher events;
@@ -90,6 +93,7 @@ class LabWorkflowServiceTest {
             patients,
             staff,
             access,
+            patientQr,
             storage,
             notifications,
             events,
@@ -142,6 +146,7 @@ class LabWorkflowServiceTest {
     when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(orders.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(criticalTasks.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(patientQr.getIfAvailable()).thenReturn(null);
     when(clock.now()).thenReturn(Instant.parse("2026-11-07T12:00:00Z"));
     when(staff.dutyDoctorUserIds(hospitalId)).thenReturn(List.of(duty));
 
@@ -184,6 +189,7 @@ class LabWorkflowServiceTest {
     when(reportQueries.findByLabOrderId(orderId)).thenReturn(Optional.of(report));
     when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(orders.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(patientQr.getIfAvailable()).thenReturn(null);
     when(clock.now()).thenReturn(Instant.parse("2026-11-07T12:00:00Z"));
 
     service.verify(orderId);
@@ -211,4 +217,33 @@ class LabWorkflowServiceTest {
     d.setBookingRef("LB-X");
     return d;
   }
+
+  @Test
+  void collectSample_acceptsPatientQrPortWhenBookingTokenDiffers() {
+    UUID orderId = UUID.randomUUID();
+    UUID patientId = UUID.randomUUID();
+    LabOrder order = new LabOrder();
+    order.setId(orderId);
+    order.setPatientId(patientId);
+    order.setStatus(LabOrderStatus.ORDERED);
+    order.setOrderType(OrderType.DOCTOR);
+    LabOrderDetail detail = new LabOrderDetail();
+    detail.setLabOrderId(orderId);
+    detail.setQrToken("booking-token");
+    when(orders.findById(orderId)).thenReturn(Optional.of(order));
+    when(details.findByLabOrderId(orderId)).thenReturn(Optional.of(detail));
+    when(access.requireUserId()).thenReturn(UUID.randomUUID());
+    when(clock.now()).thenReturn(Instant.parse("2026-01-15T10:00:00Z"));
+    when(samples.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(details.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(orders.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    PatientQrPort qr = org.mockito.Mockito.mock(PatientQrPort.class);
+    when(patientQr.getIfAvailable()).thenReturn(qr);
+    when(qr.resolvePatientId("patient-identity")).thenReturn(Optional.of(patientId));
+
+    service.collectSample(orderId, "patient-identity");
+    verify(orders).save(any(LabOrder.class));
+  }
+
 }

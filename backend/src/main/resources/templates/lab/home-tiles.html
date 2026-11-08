@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  Optional fragments for V2-01 home wire-up (do not edit templates/home.html from V2-08).
+  Request: docs/plan/requests/V2-08.md
+*/-->
+
+<section th:fragment="patient" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{lab.home.reports}">My lab reports</h3>
+  <p class="mf-tile-meta" th:text="#{lab.home.reports.body}">Verified results only for patients.</p>
+  <a class="btn btn-sm btn-teal" th:href="@{/lab/reports}" th:text="#{lab.home.cta}">Open</a>
+</section>
+
+<section th:fragment="frontDesk" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{lab.home.walkIn}">Walk-in direct booking</h3>
+  <p class="mf-tile-meta" th:text="#{lab.home.walkIn.body}">Book by patient MRN at the desk.</p>
+  <a class="btn btn-sm btn-teal" th:href="@{/lab/direct}" th:text="#{lab.home.cta}">Open</a>
+</section>
+
+<section th:fragment="labTech" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{lab.home.queue}">Lab tech queue</h3>
+  <p class="mf-tile-meta" th:text="#{lab.home.queue.body}">Collect, receive, upload, verify.</p>
+  <a class="btn btn-sm btn-teal" th:href="@{/lab/queue}" th:text="#{lab.home.cta}">Open</a>
+</section>
+</body>
+</html>

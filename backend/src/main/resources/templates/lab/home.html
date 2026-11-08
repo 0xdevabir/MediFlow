@@ -1,19 +1,40 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.home.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-2" th:text="#{lab.home.title}">Laboratory</h1>
-  <p class="text-muted mb-4" th:text="#{lab.home.intro}">Book direct tests, view reports, or work the lab queue.</p>
-  <div class="list-group">
-    <a th:if="${isPatient or isFrontDesk}" class="list-group-item list-group-item-action" th:href="@{/lab/direct}" th:text="#{lab.home.direct}">Book a direct test</a>
-    <a th:if="${isPatient}" class="list-group-item list-group-item-action" th:href="@{/lab/reports}" th:text="#{lab.home.reports}">My lab reports</a>
-    <a th:if="${isLabTech}" class="list-group-item list-group-item-action" th:href="@{/lab/queue}" th:text="#{lab.home.queue}">Lab tech queue</a>
-    <a th:if="${isDoctor}" class="list-group-item list-group-item-action" th:href="@{/lab/home}" th:text="#{lab.home.doctor}">Order tests for encounter</a>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='lab.home.title', subtitleKey='lab.home.intro')}"></div>
+
+  <div class="mf-role-grid mf-role-grid-3">
+    <section th:if="${isPatient or isFrontDesk}" class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{lab.home.direct}">Book a direct test</h2>
+      <p class="mf-tile-meta" th:text="#{lab.home.direct.body}">Price before confirm; hospital-approved list.</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/lab/direct}" th:text="#{lab.home.cta}">Open</a>
+    </section>
+    <section th:if="${isPatient}" class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{lab.home.reports}">My lab reports</h2>
+      <p class="mf-tile-meta" th:text="#{lab.home.reports.body}">Verified results only for patients.</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/lab/reports}" th:text="#{lab.home.cta}">Open</a>
+    </section>
+    <section th:if="${isLabTech}" class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{lab.home.queue}">Lab tech queue</h2>
+      <p class="mf-tile-meta" th:text="#{lab.home.queue.body}">Collect, receive, upload, verify.</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/lab/queue}" th:text="#{lab.home.cta}">Open</a>
+    </section>
+    <section th:if="${isDoctor}" class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{lab.home.doctor}">Order from consultation</h2>
+      <p class="mf-tile-meta" th:text="#{lab.home.doctor.body}">Stable deep-link: /lab/encounters/{id}/orders</p>
+      <a class="btn btn-sm btn-outline-secondary" th:href="@{/consultations}" th:text="#{lab.home.consultations}">Consultations</a>
+    </section>
+    <section th:if="${isFrontDesk}" class="mf-tile">
+      <h2 class="mf-tile-title" th:text="#{lab.home.walkIn}">Walk-in direct booking</h2>
+      <p class="mf-tile-meta" th:text="#{lab.home.walkIn.body}">Book by patient MRN at the desk.</p>
+      <a class="btn btn-sm btn-teal" th:href="@{/lab/direct}" th:text="#{lab.home.cta}">Open</a>
+    </section>
   </div>
-  <p th:if="${isDoctor}" class="small text-muted mt-3">Doctor orders: open <code>/lab/encounters/{encounterId}/orders</code> from the consultation.</p>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

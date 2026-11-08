@@ -1,20 +1,46 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head('rx.title.list')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{rx.title.list}">Prescriptions</h1>
-  <p class="text-muted" th:text="#{rx.list.hint}">Open a draft from a consultation.</p>
-  <form class="row g-2" th:action="@{/prescriptions/new}" method="get" style="max-width: 28rem">
-    <div class="col">
-      <input class="form-control" name="encounterId" required placeholder="encounter UUID"/>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='rx.title.list', subtitleKey='rx.list.hint')}"></div>
+
+  <section sec:authorize="hasRole('DOCTOR')" aria-labelledby="rx-drafts-heading">
+    <h2 id="rx-drafts-heading" class="h5 mb-3" th:text="#{rx.list.drafts_heading}">Drafts needing review</h2>
+    <div th:if="${drafts == null or #lists.isEmpty(drafts)}"
+         th:replace="~{layout/fragments/empty-state :: empty(titleKey='rx.list.empty_title', bodyKey='rx.list.empty_body')}"></div>
+    <div class="table-responsive" th:if="${drafts != null and !#lists.isEmpty(drafts)}">
+      <table class="table mf-data-table mf-table-stack align-middle">
+        <thead>
+        <tr>
+          <th th:text="#{rx.list.col.patient}">Patient</th>
+          <th th:text="#{rx.list.col.mode}">Mode</th>
+          <th th:text="#{rx.review.status}">Status</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="d : ${drafts}">
+          <td th:attr="data-label=#{rx.list.col.patient}" th:text="${d.patientName()}">Patient</td>
+          <td th:attr="data-label=#{rx.list.col.mode}" th:text="${d.inputMode()}">MANUAL</td>
+          <td th:attr="data-label=#{rx.review.status}">
+            <span th:replace="~{layout/fragments/status-badge :: badge(level='AI', label=${d.status()})}"></span>
+          </td>
+          <td>
+            <a class="btn btn-sm btn-teal"
+               th:href="@{|/prescriptions/${d.prescriptionId()}|}"
+               th:text="#{rx.list.open}">Open</a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" type="submit" th:text="#{rx.title.new}">New</button>
-    </div>
-  </form>
+    <p class="small text-muted mt-3" th:text="#{rx.list.from_consult}">Open a draft from a consultation.</p>
+  </section>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

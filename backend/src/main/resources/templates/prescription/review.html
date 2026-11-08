@@ -1,35 +1,51 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head('rx.title.review')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0" th:text="#{rx.title.review}">Review</h1>
-    <span class="badge text-bg-secondary" th:text="${rx.status}">DRAFT</span>
-  </div>
+  <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="mf-page-title mb-1" th:text="#{rx.title.review}">Review</h1>
+      <p class="mf-page-subtitle mb-0" th:text="#{rx.review.lead}">Confirm AI suggestions before e-sign.</p>
+    </div>
+    <span th:replace="~{layout/fragments/status-badge :: badge(level=${rx.status.name() == 'DRAFT' ? 'AI' : 'SUCCESS'}, label=${rx.status})}"></span>
+  </header>
 
-  <div id="aiBanner" class="alert alert-info d-none" role="status"
-       th:text="#{rx.review.ai_waiting}">Waiting for AI…</div>
+  <div th:replace="~{layout/fragments/live-region :: region(id='aiLive', politeness='polite')}"></div>
+  <div id="aiBanner" class="alert d-none mt-2 mb-3" style="color: var(--mf-ai-amber); background: var(--mf-ai-amber-bg); border-color: #fedf89;"
+       role="status" th:text="#{rx.review.ai_waiting}">Waiting for AI…</div>
   <div id="aiManualBanner" class="alert alert-warning d-none" role="status"
        th:text="#{rx.review.ai_manual}">Manual</div>
 
   <div class="row g-4">
-    <div class="col-md-4" th:if="${meta.photoObjectKey != null}">
-      <h2 class="h6" th:text="#{rx.review.photo}">Photo</h2>
-      <p class="small text-muted" th:text="${meta.photoObjectKey}">key</p>
+    <div class="col-lg-4" th:if="${meta.photoObjectKey != null}">
+      <h2 class="h6" th:text="#{rx.review.photo}">Original photo</h2>
+      <figure class="mf-panel p-2 mb-0">
+        <img class="img-fluid rounded"
+             th:src="@{|/prescriptions/${rx.id}/photo|}"
+             th:alt="#{rx.review.photo}"
+             loading="lazy"/>
+      </figure>
+      <p class="small text-muted mt-2 mb-0" th:if="${meta.typedText != null}" th:text="${meta.typedText}"></p>
     </div>
-    <div class="col-md-8">
+    <div class="col-lg-4" th:if="${meta.photoObjectKey == null and meta.typedText != null}">
+      <h2 class="h6" th:text="#{rx.new.text}">Text</h2>
+      <pre class="mf-panel small mb-0" style="white-space: pre-wrap" th:text="${meta.typedText}">text</pre>
+    </div>
+
+    <div th:class="${meta.photoObjectKey != null or meta.typedText != null} ? 'col-lg-8' : 'col-12'">
       <h2 class="h6" th:text="#{rx.review.items}">Items</h2>
       <div class="list-group mb-3" th:each="item : ${items}">
         <div class="list-group-item"
-             th:classappend="${itemMetas[item.id] != null and (itemMetas[item.id].gateStatus.name() == 'NEEDS_REVIEW' or itemMetas[item.id].gateStatus.name() == 'UNKNOWN')} ? ' border-warning' : (${itemMetas[item.id] != null and itemMetas[item.id].gateStatus.name() == 'HARD_STOP'} ? ' border-danger' : '')">
-          <div class="d-flex justify-content-between">
+             th:classappend="${itemMetas[item.id] != null and (itemMetas[item.id].gateStatus.name() == 'NEEDS_REVIEW' or itemMetas[item.id].gateStatus.name() == 'UNKNOWN')} ? ' mf-ai-field border-warning' : (${itemMetas[item.id] != null and itemMetas[item.id].gateStatus.name() == 'HARD_STOP'} ? ' border-danger' : '')">
+          <div class="d-flex justify-content-between gap-2">
             <strong th:text="${item.rawText}">Brand</strong>
-            <span class="badge text-bg-light"
-                  th:if="${itemMetas[item.id] != null}"
-                  th:text="${itemMetas[item.id].gateStatus}">GATE</span>
+            <span th:if="${itemMetas[item.id] != null}"
+                  th:replace="~{layout/fragments/status-badge :: badge(level=${itemMetas[item.id].gateStatus.name() == 'HARD_STOP' ? 'CRITICAL' : (itemMetas[item.id].gateStatus.name() == 'PREFILLED' ? 'SUCCESS' : 'AI')}, label=${itemMetas[item.id].gateStatus})}"></span>
           </div>
           <div class="small text-muted"
                th:if="${itemMetas[item.id] != null and itemMetas[item.id].source.name() == 'AI'}">
@@ -42,9 +58,9 @@
           <div class="mt-2" th:if="${isDraft}" sec:authorize="hasRole('DOCTOR')">
             <form class="row g-1" th:action="@{|/prescriptions/${rx.id}/items/${item.id}/update|}" method="post">
               <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-              <div class="col-md-3"><input class="form-control form-control-sm" name="brandQuery" th:value="${item.rawText}" th:placeholder="#{rx.review.brand}"/></div>
-              <div class="col-md-2"><input class="form-control form-control-sm" name="dose" th:value="${item.dose}" th:placeholder="#{rx.review.dose}"/></div>
-              <div class="col-md-2"><input class="form-control form-control-sm" name="frequency" th:value="${item.frequency}" th:placeholder="#{rx.review.frequency}"/></div>
+              <div class="col-md-3"><input class="form-control form-control-sm mf-ai-field" name="brandQuery" th:value="${item.rawText}" th:placeholder="#{rx.review.brand}"/></div>
+              <div class="col-md-2"><input class="form-control form-control-sm mf-ai-field" name="dose" th:value="${item.dose}" th:placeholder="#{rx.review.dose}"/></div>
+              <div class="col-md-2"><input class="form-control form-control-sm mf-ai-field" name="frequency" th:value="${item.frequency}" th:placeholder="#{rx.review.frequency}"/></div>
               <div class="col-md-2"><input class="form-control form-control-sm" name="duration" th:value="${item.duration}" th:placeholder="#{rx.review.duration}"/></div>
               <div class="col-auto"><button class="btn btn-sm btn-outline-primary" type="submit" th:text="#{rx.review.update}">Save</button></div>
             </form>
@@ -69,7 +85,7 @@
           <div class="col-md-2"><input class="form-control" name="route" th:placeholder="#{rx.review.route}"/></div>
           <div class="col-md-2"><input class="form-control" name="frequency" required th:placeholder="#{rx.review.frequency}"/></div>
           <div class="col-md-2"><input class="form-control" name="duration" th:placeholder="#{rx.review.duration}"/></div>
-          <div class="col-auto"><button class="btn btn-primary" type="submit" th:text="#{rx.review.add_item}">Add</button></div>
+          <div class="col-auto"><button class="btn btn-teal" type="submit" th:text="#{rx.review.add_item}">Add</button></div>
         </form>
       </div>
     </div>
@@ -95,13 +111,18 @@
     </li>
   </ul>
 
-  <div class="d-flex flex-wrap gap-2" th:if="${isDraft}" sec:authorize="hasRole('DOCTOR')">
+  <div class="d-flex flex-wrap gap-2 align-items-end" th:if="${isDraft}" sec:authorize="hasRole('DOCTOR')">
     <button class="btn btn-outline-secondary" type="button" id="runAiBtn"
             th:attr="data-rx-id=${rx.id}"
             th:disabled="${meta.inputMode.name() == 'MANUAL'}"
             th:text="#{rx.review.run_ai}">AI</button>
-    <form th:action="@{|/prescriptions/${rx.id}/sign|}" method="post">
+    <form class="d-flex flex-wrap gap-2 align-items-end" th:action="@{|/prescriptions/${rx.id}/sign|}" method="post">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div>
+        <label class="form-label small mb-0" for="followUpDate" th:text="#{rx.review.follow_up}">Follow-up</label>
+        <input class="form-control form-control-sm" type="date" name="followUpDate" id="followUpDate"
+               th:value="${meta.followUpDate}"/>
+      </div>
       <button class="btn btn-success" type="submit" th:text="#{rx.review.sign}">Sign</button>
     </form>
   </div>
@@ -121,6 +142,7 @@
   </div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
+<script th:src="@{/js/sse.js}"></script>
 <script th:src="@{/js/prescription/ai-job.js}"></script>
 </body>
 </html>

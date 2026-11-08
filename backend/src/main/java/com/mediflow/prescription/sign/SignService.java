@@ -25,6 +25,7 @@ import com.mediflow.shared.domain.PrescriptionStatus;
 import com.mediflow.shared.event.DomainEvents;
 import com.mediflow.shared.port.AuditPort;
 import com.mediflow.shared.port.ClockPort;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,12 @@ public class SignService {
   @Transactional
   @PreAuthorize("hasRole('DOCTOR')")
   public Prescription sign(UUID prescriptionId) {
+    return sign(prescriptionId, null);
+  }
+
+  @Transactional
+  @PreAuthorize("hasRole('DOCTOR')")
+  public Prescription sign(UUID prescriptionId, LocalDate followUpDate) {
     Prescription rx = drafts.requireDraft(prescriptionId);
     UUID doctor = access.requireDoctorUserId();
     access.requireCanPrescribe(rx.getPatientId(), rx.getEncounterId());
@@ -189,6 +196,20 @@ public class SignService {
         "Prescription",
         rx.getId(),
         Map.of("licence", practitioner.getLicenceNo()));
+    RxPrescriptionMeta rxMeta = metas.findByPrescriptionId(prescriptionId).orElse(null);
+    LocalDate effectiveFollowUp = followUpDate;
+    if (effectiveFollowUp == null && rxMeta != null) {
+      effectiveFollowUp = rxMeta.getFollowUpDate();
+    }
+    if (effectiveFollowUp != null) {
+      if (rxMeta != null) {
+        rxMeta.setFollowUpDate(effectiveFollowUp);
+        metas.save(rxMeta);
+      }
+      events.publishEvent(
+          new DomainEvents.FollowUpScheduled(
+              rx.getId(), rx.getPatientId(), effectiveFollowUp, clock.now()));
+    }
     return rx;
   }
 

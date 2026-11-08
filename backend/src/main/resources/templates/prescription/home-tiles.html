@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  Doctor home fragment: drafts needing review.
+  Wire from home.html via V2-01 follow-up (see docs/plan/requests/V2-07.md).
+*/-->
+<th:block th:fragment="doctor">
+  <div class="mf-tile">
+    <h3 class="mf-tile-title" th:text="#{rx.home.drafts_title}">Prescription drafts</h3>
+    <p class="mf-tile-meta" th:text="#{rx.home.drafts_body}">Review AI and manual drafts before e-sign.</p>
+    <a class="btn btn-sm btn-teal" th:href="@{/prescriptions}" th:text="#{rx.list.open}">Open</a>
+  </div>
+</th:block>
+</body>
+</html>

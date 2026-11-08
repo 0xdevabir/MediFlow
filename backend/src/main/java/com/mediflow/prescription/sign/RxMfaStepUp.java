@@ -1,9 +1,8 @@
 package com.mediflow.prescription.sign;
 
 /**
- * MFA step-up for e-sign. T01 owns {@code MfaReauthService}; when that bean is present it should be
- * preferred. This module ships a session-attribute fallback that understands the same keys T01
- * documents ({@code identity.mfa.verifiedAt} / {@code identity.mfa.verifiedFor}, 5-minute window).
+ * MFA step-up for e-sign. Implemented by {@link PortRxMfaStepUp} over shared {@link
+ * com.mediflow.shared.port.MfaReauthPort}.
  */
 public interface RxMfaStepUp {
 

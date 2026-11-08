@@ -8,16 +8,14 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Default dictionary: reads the shared drug_brand / drug_generic / drug_interaction /
- * drug_dose_limit tables (seeded by T08) into an in-memory snapshot refreshed every 60 s.
+ * Legacy in-module dictionary snapshot (T06). Prefer {@link PortRxDrugDictionary} over {@link
+ * com.mediflow.shared.port.DrugDictionaryPort}. Kept for direct construction in tests; not a Spring
+ * bean.
  */
-@Component
-@ConditionalOnMissingBean(RxDrugDictionary.class)
+@Deprecated
 public class RepositoryRxDrugDictionary implements RxDrugDictionary {
 
   private static final Duration TTL = Duration.ofSeconds(60);

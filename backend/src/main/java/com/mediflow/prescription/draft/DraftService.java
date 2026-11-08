@@ -31,6 +31,8 @@ import com.mediflow.shared.port.ObjectStoragePort;
 import com.mediflow.shared.repo.AiFlagOverrideRepository;
 import com.mediflow.shared.repo.EncounterRepository;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -443,5 +445,35 @@ public class DraftService {
     }
     List<BrandInfo> search = dictionary.searchBrands(brandQuery, 5);
     return search.size() == 1 ? search.get(0) : null;
+  }
+
+  public record PhotoBlob(InputStream stream, String contentType) {}
+
+  @Transactional(readOnly = true)
+  public Optional<PhotoBlob> photo(UUID prescriptionId) {
+    requirePrescription(prescriptionId);
+    RxPrescriptionMeta meta = requireMeta(prescriptionId);
+    if (meta.getPhotoObjectKey() == null || meta.getPhotoObjectKey().isBlank()) {
+      return Optional.empty();
+    }
+    return storage
+        .get(meta.getPhotoObjectKey())
+        .map(
+            in ->
+                new PhotoBlob(
+                    in,
+                    meta.getPhotoContentType() == null
+                        ? "image/jpeg"
+                        : meta.getPhotoContentType()));
+  }
+
+  @Transactional
+  @PreAuthorize("hasRole('DOCTOR')")
+  public void setFollowUpDate(UUID prescriptionId, LocalDate followUpDate) {
+    Prescription rx = requireDraft(prescriptionId);
+    access.requireCanPrescribe(rx.getPatientId(), rx.getEncounterId());
+    RxPrescriptionMeta meta = requireMeta(prescriptionId);
+    meta.setFollowUpDate(followUpDate);
+    metas.save(meta);
   }
 }

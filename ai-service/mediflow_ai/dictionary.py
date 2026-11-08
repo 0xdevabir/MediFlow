@@ -2,6 +2,10 @@
 
 No match → brand/generic/atc null, drug confidence 0 (never guess).
 Source order: local file → HTTP export → illustrative seed (dev/tests only).
+
+Accepts pharmacy ``/api/internal/dictionary/export`` ({brands, generics,
+importVersion} with DrugDictionaryPort-aligned field names) and the legacy
+illustrative ``{entries:[...]}`` / flat-list shapes.
 """
 
 from __future__ import annotations
@@ -50,7 +54,7 @@ class DrugDictionary:
         *,
         url: str | None = None,
         token: str | None = None,
-        token_header: str = "X-Internal-Token",
+        token_header: str = "X-Mediflow-Internal-Key",
         file_path: str | None = None,
         refresh_s: int = 3600,
         allow_illustrative: bool = True,
@@ -166,17 +170,39 @@ def _norm_key(s: str) -> str:
     return " ".join("".join(ch.lower() if ch.isalnum() or ch.isspace() else " " for ch in s).split())
 
 
+def _rows_from_payload(data: Any) -> list[Any]:
+    """Normalise pharmacy export / illustrative / flat-list JSON to row dicts."""
+    if isinstance(data, list):
+        return data
+    if not isinstance(data, dict):
+        raise ValueError("dictionary JSON must be a list or object")
+    if "entries" in data:
+        entries = data["entries"]
+        if entries is None:
+            return []
+        if not isinstance(entries, list):
+            raise ValueError("dictionary JSON 'entries' must be a list")
+        return entries
+    if "brands" in data:
+        brands = data["brands"]
+        if brands is None:
+            return []
+        if not isinstance(brands, list):
+            raise ValueError("dictionary JSON 'brands' must be a list")
+        return brands
+    # Empty pharmacy-shaped payload (importVersion/generics only) → no rows
+    if "generics" in data or "importVersion" in data:
+        return []
+    raise ValueError("dictionary JSON must be a list or {entries|brands: [...]}")
+
+
 def _load_file(path: Path) -> Iterable[DrugEntry]:
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() == ".csv":
         yield from _from_rows(csv.DictReader(text.splitlines()))
         return
     data = json.loads(text)
-    if isinstance(data, dict) and "entries" in data:
-        data = data["entries"]
-    if not isinstance(data, list):
-        raise ValueError("dictionary JSON must be a list or {entries: [...]}")
-    yield from _from_rows(data)
+    yield from _from_rows(_rows_from_payload(data))
 
 
 def _load_http(url: str, token: str | None, header: str) -> Iterable[DrugEntry]:
@@ -190,10 +216,7 @@ def _load_http(url: str, token: str | None, header: str) -> Iterable[DrugEntry]:
         if "csv" in ctype or url.endswith(".csv"):
             yield from _from_rows(csv.DictReader(r.text.splitlines()))
             return
-        data = r.json()
-        if isinstance(data, dict) and "entries" in data:
-            data = data["entries"]
-        yield from _from_rows(data)
+        yield from _from_rows(_rows_from_payload(r.json()))
 
 
 def _from_rows(rows: Iterable[Any]) -> Iterable[DrugEntry]:

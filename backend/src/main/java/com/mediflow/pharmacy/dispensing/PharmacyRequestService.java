@@ -1,7 +1,7 @@
 package com.mediflow.pharmacy.dispensing;
 
-import com.mediflow.pharmacy.dictionary.DrugDictionaryPort;
-import com.mediflow.pharmacy.dictionary.DrugMatch;
+import com.mediflow.pharmacy.dictionary.DrugDictionaryService;
+import com.mediflow.shared.port.DrugDictionaryPort.DrugMatch;
 import com.mediflow.shared.domain.Prescription;
 import com.mediflow.shared.domain.PrescriptionStatus;
 import com.mediflow.shared.port.AuditPort;
@@ -26,7 +26,7 @@ public class PharmacyRequestService {
 
   private final NamedParameterJdbcTemplate jdbc;
   private final PrescriptionRepository prescriptions;
-  private final DrugDictionaryPort dictionary;
+  private final DrugDictionaryService dictionary;
   private final PharmacyHospitalResolver hospitals;
   private final AuditPort audit;
   private final ClockPort clock;
@@ -36,7 +36,7 @@ public class PharmacyRequestService {
   public PharmacyRequestService(
       NamedParameterJdbcTemplate jdbc,
       PrescriptionRepository prescriptions,
-      DrugDictionaryPort dictionary,
+      DrugDictionaryService dictionary,
       PharmacyHospitalResolver hospitals,
       AuditPort audit,
       ClockPort clock,

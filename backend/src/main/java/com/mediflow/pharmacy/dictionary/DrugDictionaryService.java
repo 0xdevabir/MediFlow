@@ -1,7 +1,7 @@
 package com.mediflow.pharmacy.dictionary;
 
-import com.mediflow.pharmacy.dictionary.DrugMatch.MatchType;
 import com.mediflow.shared.domain.ConflictSeverity;
+import com.mediflow.shared.port.DrugDictionaryPort;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -24,12 +25,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * {@link DrugDictionaryPort} over the shared {@code drug_brand} / {@code drug_generic} tables.
- * Exact lookups are cached ({@link DictionaryCache}); fuzzy suggestions use pg_trgm when installed
- * and a Java trigram port otherwise. Dictionary reference data is not patient data, so lookups are
- * not audited.
+ * Spring bean for {@link DrugDictionaryPort} over {@code drug_brand} / {@code drug_generic}. Exact
+ * lookups are cached ({@link DictionaryCache}); fuzzy suggestions use pg_trgm when installed and a
+ * Java trigram port otherwise. Reference data is not patient data, so lookups are not audited.
+ *
+ * <p>Pharmacy-only helpers ({@link #resolveGeneric}, {@link #findBrand}, {@link #brandsOfGeneric},
+ * {@link #suggest(String, int)}) stay on this class for dispense / admin UI.
  */
 @Service
+@Primary
 @Transactional(readOnly = true)
 public class DrugDictionaryService implements DrugDictionaryPort {
 
@@ -68,7 +72,7 @@ public class DrugDictionaryService implements DrugDictionaryPort {
               rs.getString("generic_name"),
               rs.getString("atc_code"),
               rs.getString("rxnorm_code"),
-              MatchType.EXACT_BRAND,
+              DrugMatch.MatchType.EXACT_BRAND,
               1.0,
               rs.getBoolean("illustrative"));
 
@@ -109,17 +113,25 @@ public class DrugDictionaryService implements DrugDictionaryPort {
   }
 
   @Override
+  public List<DrugMatch> suggestBrands(String query) {
+    return suggest(query, MAX_SUGGESTIONS);
+  }
+
+  /**
+   * Resolve a brand or generic name to its generic. Brand matches win; ambiguous brand → empty
+   * (never guessed). Pharmacy-admin helper; not on the shared port.
+   */
   public Optional<GenericRef> resolveGeneric(String name) {
     List<DrugMatch> brands = findBrandProducts(name);
     if (!brands.isEmpty()) {
       Set<UUID> generics = brands.stream().map(DrugMatch::genericId).collect(Collectors.toSet());
-      // A brand name mapping to several generics is ambiguous → unknown, never guessed.
-      return generics.size() == 1 ? Optional.of(brands.get(0).generic()) : Optional.empty();
+      return generics.size() == 1 ? Optional.of(toGeneric(brands.get(0))) : Optional.empty();
     }
     return findGenericByName(name);
   }
 
-  Optional<GenericRef> findGenericByName(String name) {
+  @Override
+  public Optional<GenericRef> findGenericByName(String name) {
     String key = DrugNames.normalize(name);
     if (key.isEmpty()) {
       return Optional.empty();
@@ -136,7 +148,7 @@ public class DrugDictionaryService implements DrugDictionaryPort {
     return rows.size() == 1 ? Optional.of(rows.get(0)) : Optional.empty();
   }
 
-  @Override
+  /** Fuzzy candidates with an explicit limit (admin UI). Prefer {@link #suggestBrands} at the port. */
   public List<DrugMatch> suggest(String text, int limit) {
     String q = DrugNames.normalize(text);
     int max = Math.max(1, Math.min(limit, MAX_SUGGESTIONS));
@@ -148,7 +160,9 @@ public class DrugDictionaryService implements DrugDictionaryPort {
       try {
         hits = suggestSql(q, max);
       } catch (DataAccessException e) {
-        log.warn("pg_trgm lookup failed ({}); using Java fallback", e.getMostSpecificCause().toString());
+        log.warn(
+            "pg_trgm lookup failed ({}); using Java fallback",
+            e.getMostSpecificCause().toString());
         trigramAvailable = false;
         hits = suggestJava(q);
       }
@@ -156,25 +170,32 @@ public class DrugDictionaryService implements DrugDictionaryPort {
       hits = suggestJava(q);
     }
     return hits.stream()
-        .sorted(Comparator.comparingDouble(DrugMatch::score).reversed()
-            .thenComparing(m -> m.brandName() == null ? m.genericName() : m.brandName()))
+        .sorted(
+            Comparator.comparingDouble(DrugMatch::score)
+                .reversed()
+                .thenComparing(m -> m.brandName() == null ? m.genericName() : m.brandName()))
         .limit(max)
         .toList();
   }
 
   private List<DrugMatch> suggestSql(String q, int max) {
     MapSqlParameterSource p =
-        new MapSqlParameterSource("q", q).addValue("min", SUGGESTION_MIN_SIMILARITY).addValue("lim", max);
+        new MapSqlParameterSource("q", q)
+            .addValue("min", SUGGESTION_MIN_SIMILARITY)
+            .addValue("lim", max);
     List<DrugMatch> out = new ArrayList<>();
     out.addAll(
         jdbc.query(
-            "SELECT * FROM (" + BRAND_SELECT.replace("SELECT b.id", "SELECT similarity(lower(b.name), :q) AS score, b.id")
+            "SELECT * FROM ("
+                + BRAND_SELECT.replace("SELECT b.id", "SELECT similarity(lower(b.name), :q) AS score, b.id")
                 + ") x WHERE x.score >= :min ORDER BY x.score DESC LIMIT :lim",
             p,
-            (rs, n) -> BRAND_ROW.mapRow(rs, n).withMatch(MatchType.SUGGESTION, rs.getDouble("score"))));
+            (rs, n) -> withMatch(BRAND_ROW.mapRow(rs, n), DrugMatch.MatchType.SUGGESTION, rs.getDouble("score"))));
     out.addAll(
         jdbc.query(
-            "SELECT * FROM (" + GENERIC_SELECT.replace("SELECT g.id", "SELECT similarity(lower(g.name), :q) AS score, g.id")
+            "SELECT * FROM ("
+                + GENERIC_SELECT.replace(
+                    "SELECT g.id", "SELECT similarity(lower(g.name), :q) AS score, g.id")
                 + ") x WHERE x.score >= :min ORDER BY x.score DESC LIMIT :lim",
             p,
             (rs, n) -> genericAsMatch(GENERIC_ROW.mapRow(rs, n), rs.getDouble("score"))));
@@ -186,7 +207,7 @@ public class DrugDictionaryService implements DrugDictionaryPort {
     for (DrugMatch b : jdbc.query(BRAND_SELECT, BRAND_ROW)) {
       double s = DrugNames.similarity(b.brandName(), q);
       if (s >= SUGGESTION_MIN_SIMILARITY) {
-        out.add(b.withMatch(MatchType.SUGGESTION, s));
+        out.add(withMatch(b, DrugMatch.MatchType.SUGGESTION, s));
       }
     }
     for (GenericRef g : jdbc.query(GENERIC_SELECT, GENERIC_ROW)) {
@@ -200,8 +221,38 @@ public class DrugDictionaryService implements DrugDictionaryPort {
 
   private static DrugMatch genericAsMatch(GenericRef g, double score) {
     return new DrugMatch(
-        null, null, null, null, null, g.id(), g.name(), g.atcCode(), g.rxnormCode(),
-        MatchType.SUGGESTION, score, g.illustrative());
+        null,
+        null,
+        null,
+        null,
+        null,
+        g.id(),
+        g.name(),
+        g.atcCode(),
+        g.rxnormCode(),
+        DrugMatch.MatchType.SUGGESTION,
+        score,
+        g.illustrative());
+  }
+
+  private static DrugMatch withMatch(DrugMatch m, DrugMatch.MatchType type, double score) {
+    return new DrugMatch(
+        m.brandId(),
+        m.brandName(),
+        m.strength(),
+        m.form(),
+        m.dgdaRegNo(),
+        m.genericId(),
+        m.genericName(),
+        m.atc(),
+        m.rxnorm(),
+        type,
+        score,
+        m.illustrative());
+  }
+
+  private static GenericRef toGeneric(DrugMatch m) {
+    return new GenericRef(m.genericId(), m.genericName(), m.atc(), m.rxnorm(), m.illustrative());
   }
 
   boolean trigramAvailable() {
@@ -210,7 +261,8 @@ public class DrugDictionaryService implements DrugDictionaryPort {
       try {
         Integer n =
             jdbc.getJdbcTemplate()
-                .queryForObject("SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm'", Integer.class);
+                .queryForObject(
+                    "SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm'", Integer.class);
         known = n != null && n > 0;
       } catch (DataAccessException e) {
         known = false;
@@ -225,11 +277,12 @@ public class DrugDictionaryService implements DrugDictionaryPort {
     if (genericId == null) {
       return Optional.empty();
     }
-    return jdbc.query(GENERIC_SELECT + " WHERE g.id = :id", Map.of("id", genericId), GENERIC_ROW).stream()
+    return jdbc.query(GENERIC_SELECT + " WHERE g.id = :id", Map.of("id", genericId), GENERIC_ROW)
+        .stream()
         .findFirst();
   }
 
-  @Override
+  /** Pharmacy dispense / substitution helper — not on the shared port. */
   public Optional<DrugMatch> findBrand(UUID brandId) {
     if (brandId == null) {
       return Optional.empty();
@@ -238,7 +291,7 @@ public class DrugDictionaryService implements DrugDictionaryPort {
         .findFirst();
   }
 
-  @Override
+  /** Every product of one generic (substitution picker). */
   public List<DrugMatch> brandsOfGeneric(UUID genericId) {
     if (genericId == null) {
       return List.of();
@@ -256,12 +309,9 @@ public class DrugDictionaryService implements DrugDictionaryPort {
     }
     return jdbc.query(
         """
-        SELECT i.id, i.generic_a_id, ga.name AS a_name, i.generic_b_id, gb.name AS b_name,
-               i.severity, i.description,
+        SELECT i.generic_a_id, i.generic_b_id, i.severity, i.description,
                COALESCE(p.source = 'PLACEHOLDER_SEED', false) AS placeholder
         FROM drug_interaction i
-        JOIN drug_generic ga ON ga.id = i.generic_a_id
-        JOIN drug_generic gb ON gb.id = i.generic_b_id
         LEFT JOIN drug_data_provenance p ON p.table_name = 'drug_interaction' AND p.row_id = i.id
         WHERE i.generic_a_id IN (:ids) AND i.generic_b_id IN (:ids)
         """,
@@ -269,13 +319,31 @@ public class DrugDictionaryService implements DrugDictionaryPort {
         DrugDictionaryService::interaction);
   }
 
+  @Override
+  public Optional<InteractionRule> interaction(UUID genericA, UUID genericB) {
+    if (genericA == null || genericB == null || genericA.equals(genericB)) {
+      return Optional.empty();
+    }
+    return jdbc
+        .query(
+            """
+            SELECT i.generic_a_id, i.generic_b_id, i.severity, i.description,
+                   COALESCE(p.source = 'PLACEHOLDER_SEED', false) AS placeholder
+            FROM drug_interaction i
+            LEFT JOIN drug_data_provenance p ON p.table_name = 'drug_interaction' AND p.row_id = i.id
+            WHERE (i.generic_a_id = :a AND i.generic_b_id = :b)
+               OR (i.generic_a_id = :b AND i.generic_b_id = :a)
+            """,
+            Map.of("a", genericA, "b", genericB),
+            DrugDictionaryService::interaction)
+        .stream()
+        .findFirst();
+  }
+
   private static InteractionRule interaction(ResultSet rs, int n) throws SQLException {
     return new InteractionRule(
-        rs.getObject("id", UUID.class),
         rs.getObject("generic_a_id", UUID.class),
-        rs.getString("a_name"),
         rs.getObject("generic_b_id", UUID.class),
-        rs.getString("b_name"),
         severity(rs.getString("severity")),
         rs.getString("description"),
         rs.getBoolean("placeholder"));
@@ -297,7 +365,7 @@ public class DrugDictionaryService implements DrugDictionaryPort {
     }
     return jdbc.query(
         """
-        SELECT d.id, d.generic_id, d.population, d.route, d.min_dose, d.max_dose, d.unit,
+        SELECT d.generic_id, d.population, d.route, d.min_dose, d.max_dose, d.unit,
                COALESCE(p.source = 'PLACEHOLDER_SEED', false) AS placeholder
         FROM drug_dose_limit d
         LEFT JOIN drug_data_provenance p ON p.table_name = 'drug_dose_limit' AND p.row_id = d.id
@@ -307,7 +375,6 @@ public class DrugDictionaryService implements DrugDictionaryPort {
         Map.of("id", genericId),
         (rs, n) ->
             new DoseLimitRule(
-                rs.getObject("id", UUID.class),
                 rs.getObject("generic_id", UUID.class),
                 rs.getString("population"),
                 rs.getString("route"),
@@ -323,11 +390,13 @@ public class DrugDictionaryService implements DrugDictionaryPort {
     List<DrugMatch> brands = jdbc.query(BRAND_SELECT + " ORDER BY b.name, b.strength", BRAND_ROW);
     Integer version =
         jdbc.getJdbcTemplate()
-            .queryForObject("SELECT COALESCE(max(import_version), 0) FROM drug_dictionary_import", Integer.class);
+            .queryForObject(
+                "SELECT COALESCE(max(import_version), 0) FROM drug_dictionary_import", Integer.class);
     Map<UUID, GenericRef> byId = new LinkedHashMap<>();
     generics.forEach(g -> byId.put(g.id(), g));
     return new DictionarySnapshot(version == null ? 0 : version, List.copyOf(byId.values()), brands);
   }
 
-  public record DictionarySnapshot(int importVersion, List<GenericRef> generics, List<DrugMatch> brands) {}
+  public record DictionarySnapshot(
+      int importVersion, List<GenericRef> generics, List<DrugMatch> brands) {}
 }

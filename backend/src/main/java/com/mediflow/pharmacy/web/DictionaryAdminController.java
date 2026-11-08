@@ -2,8 +2,8 @@ package com.mediflow.pharmacy.web;
 
 import com.mediflow.pharmacy.dictionary.DgdaImportService;
 import com.mediflow.pharmacy.dictionary.DgdaImportService.ImportResult;
-import com.mediflow.pharmacy.dictionary.DrugDictionaryPort;
-import com.mediflow.pharmacy.dictionary.DrugMatch;
+import com.mediflow.pharmacy.dictionary.DrugDictionaryService;
+import com.mediflow.shared.port.DrugDictionaryPort.DrugMatch;
 import com.mediflow.shared.web.CurrentUser;
 import java.io.IOException;
 import java.util.List;
@@ -25,11 +25,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class DictionaryAdminController {
 
   private final DgdaImportService imports;
-  private final DrugDictionaryPort dictionary;
+  private final DrugDictionaryService dictionary;
   private final CurrentUser currentUser;
 
   public DictionaryAdminController(
-      DgdaImportService imports, DrugDictionaryPort dictionary, CurrentUser currentUser) {
+      DgdaImportService imports, DrugDictionaryService dictionary, CurrentUser currentUser) {
     this.imports = imports;
     this.dictionary = dictionary;
     this.currentUser = currentUser;
@@ -96,3 +96,5 @@ public class DictionaryAdminController {
     return "pharmacy/dictionary-unmapped";
   }
 }
+
+

@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
-<body>
-<nav th:replace="~{layout/base :: nav}"></nav>
-<main class="container pb-5">
-  <p><a th:href="@{/pharmacy/dictionary}">&larr; Dictionary</a></p>
-  <h1 class="h3" th:text="#{pharmacy.dictionary.unmapped}">Unmapped</h1>
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
+<div th:replace="~{layout/base :: nav}"></div>
+<main id="main" class="container mf-panel-wide mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <p class="mb-2"><a th:href="@{/pharmacy/dictionary}">&larr; <span th:text="#{pharmacy.dictionary.title}">Dictionary</span></a></p>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='pharmacy.dictionary.unmapped', subtitleKey='pharmacy.dictionary.lead')}"></div>
+
   <pre class="bg-light p-3 small" th:text="${unmappedReport}"> </pre>
+
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

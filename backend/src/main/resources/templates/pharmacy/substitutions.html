@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
-<body>
-<nav th:replace="~{layout/base :: nav}"></nav>
-<main class="container pb-5">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
+<div th:replace="~{layout/base :: nav}"></div>
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <p><a th:href="@{/pharmacy}">&larr; Pharmacy</a></p>
-  <h1 class="h3" th:text="#{pharmacy.substitution.title}">Substitutions</h1>
-  <div class="border rounded p-3 mb-3" th:each="r : ${rows}">
+  <p class="mb-2"><a th:href="@{/pharmacy}">&larr; <span th:text="#{pharmacy.home.title}">Pharmacy</span></a></p>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='pharmacy.substitution.title', subtitleKey='pharmacy.substitution.lead')}"></div>
+<div class="border rounded p-3 mb-3" th:each="r : ${rows}">
     <div th:text="|Rx ${r.prescriptionId} · brand ${r.proposedBrandId}|">rx</div>
     <div class="small" th:text="${r.reason}">reason</div>
     <form class="d-inline" th:action="@{/pharmacy/substitutions/{id}/decide(id=${r.id})}" method="post">

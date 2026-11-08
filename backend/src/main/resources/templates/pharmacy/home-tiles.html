@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Pharmacist role-home tiles (dispense queue + low stock). Wire from home via V2-01 follow-up. -->
+<th:block th:fragment="tiles">
+  <section class="mf-tile">
+    <h3 class="mf-tile-title" th:text="#{pharmacy.home.queue}">Signed prescriptions</h3>
+    <p class="mf-tile-meta" th:text="#{pharmacy.home.queueTile}">Open the dispense desk for signed Rx.</p>
+    <a class="btn btn-sm btn-teal" th:href="@{/pharmacy}" th:text="#{pharmacy.home.openDesk}">Dispense desk</a>
+  </section>
+  <section class="mf-tile">
+    <h3 class="mf-tile-title" th:text="#{pharmacy.home.lowStock}">Low stock</h3>
+    <p class="mf-tile-meta" th:text="#{pharmacy.home.lowStockTile}">Review brands at or below reorder level.</p>
+    <a class="btn btn-sm btn-outline-secondary" th:href="@{/pharmacy/stock/low}" th:text="#{pharmacy.home.viewLowStock}">View low stock</a>
+  </section>
+</th:block>
+</body>
+</html>

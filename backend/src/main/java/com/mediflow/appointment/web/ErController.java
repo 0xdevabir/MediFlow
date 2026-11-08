@@ -37,14 +37,28 @@ public class ErController {
     List<RedAlert> active = redAlerts.active(hospitalId);
     Map<UUID, Patient> byPatient = new HashMap<>();
     Map<UUID, RedAlertExt> ext = new HashMap<>();
+    Map<UUID, String> assigneeNames = new HashMap<>();
     for (RedAlert a : active) {
       patients.findById(a.getPatientId()).ifPresent(p -> byPatient.put(a.getPatientId(), p));
-      redAlerts.ext(a.getId()).ifPresent(e -> ext.put(a.getId(), e));
+      redAlerts
+          .ext(a.getId())
+          .ifPresent(
+              e -> {
+                ext.put(a.getId(), e);
+                if (e.assignedErUserId() != null) {
+                  String name = redAlerts.assigneeName(e.assignedErUserId());
+                  if (name != null) {
+                    assigneeNames.put(e.assignedErUserId(), name);
+                  }
+                }
+              });
     }
     model.addAttribute("alerts", active);
     model.addAttribute("patients", byPatient);
     model.addAttribute("ext", ext);
+    model.addAttribute("assigneeNames", assigneeNames);
     model.addAttribute("hospitalId", hospitalId);
+    model.addAttribute("activeCount", active.size());
     return "er/board";
   }
 
@@ -57,8 +71,12 @@ public class ErController {
                 () ->
                     new com.mediflow.appointment.support.AppointmentException(
                         "appointment.error.redAlertNotFound"));
+    RedAlertExt extension = redAlerts.ext(id).orElse(null);
     model.addAttribute("alert", alert);
-    model.addAttribute("ext", redAlerts.ext(id).orElse(null));
+    model.addAttribute("ext", extension);
+    if (extension != null && extension.assignedErUserId() != null) {
+      model.addAttribute("assigneeName", redAlerts.assigneeName(extension.assignedErUserId()));
+    }
     patients.findById(alert.getPatientId()).ifPresent(p -> model.addAttribute("patient", p));
     return "er/detail";
   }

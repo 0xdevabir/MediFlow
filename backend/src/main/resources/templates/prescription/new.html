@@ -1,16 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('rx.title.new')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5" style="max-width: 40rem">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{rx.title.new}">New draft</h1>
-  <form th:action="@{/prescriptions}" method="post" enctype="multipart/form-data" class="card card-body">
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='rx.title.new', subtitleKey='rx.new.subtitle')}"></div>
+
+  <div class="mf-panel mb-4" th:if="${encounter != null}">
+    <p class="mb-1">
+      <strong th:text="#{rx.new.patient}">Patient</strong>:
+      <span th:text="${encounter.patientName()}">Name</span>
+      <span class="text-muted small" th:if="${encounter.mrn() != null}"
+            th:text="' · MRN ' + ${encounter.mrn()}"></span>
+    </p>
+    <p class="mb-0 small text-muted">
+      <span th:text="#{rx.new.encounter}">Encounter</span>
+      <code class="user-select-all" th:text="${encounter.encounterId()}">uuid</code>
+    </p>
+  </div>
+
+  <form th:action="@{/prescriptions}" method="post" enctype="multipart/form-data" class="mf-panel">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
     <input type="hidden" name="encounterId" th:value="${encounterId}"/>
     <div class="mb-3">
-      <label class="form-label" th:text="#{rx.new.mode}">Mode</label>
+      <label class="form-label" for="mode" th:text="#{rx.new.mode}">Mode</label>
       <select class="form-select" name="mode" id="mode">
         <option value="MANUAL" th:text="#{rx.new.mode.MANUAL}">Manual</option>
         <option value="TEXT" th:text="#{rx.new.mode.TEXT}">Text</option>
@@ -18,14 +33,14 @@
       </select>
     </div>
     <div class="mb-3" id="textBlock">
-      <label class="form-label" th:text="#{rx.new.text}">Text</label>
-      <textarea class="form-control" name="typedText" rows="4"></textarea>
+      <label class="form-label" for="typedText" th:text="#{rx.new.text}">Text</label>
+      <textarea class="form-control" name="typedText" id="typedText" rows="4"></textarea>
     </div>
     <div class="mb-3" id="photoBlock">
-      <label class="form-label" th:text="#{rx.new.photo}">Photo</label>
-      <input class="form-control" type="file" name="photo" accept="image/*"/>
+      <label class="form-label" for="photo" th:text="#{rx.new.photo}">Photo</label>
+      <input class="form-control" type="file" name="photo" id="photo" accept="image/*"/>
     </div>
-    <button class="btn btn-primary" type="submit" th:text="#{rx.new.submit}">Create</button>
+    <button class="btn btn-teal" type="submit" th:text="#{rx.new.submit}">Create draft</button>
   </form>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

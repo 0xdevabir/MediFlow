@@ -1,48 +1,57 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('rx.title.copy')}">
   <style>
     @media print {
-      nav, .no-print { display: none !important; }
+      nav, .no-print, .skip-link { display: none !important; }
       body { background: #fff; }
     }
   </style>
 </head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5" style="max-width: 48rem">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-    <h1 class="h3 mb-0" th:text="#{rx.copy.title}">e-Prescription</h1>
+    <h1 class="mf-page-title mb-0" th:text="#{rx.copy.title}">e-Prescription</h1>
     <button class="btn btn-outline-secondary" type="button" onclick="window.print()" th:text="#{rx.copy.print}">Print</button>
   </div>
-  <div class="card card-body">
-    <p class="mb-1"><strong th:text="#{rx.review.status}">Status</strong>: <span th:text="${rx.status}">SIGNED</span></p>
-    <p class="mb-3 small text-muted" th:text="${rx.id}">id</p>
-    <table class="table">
-      <thead>
-      <tr>
-        <th th:text="#{rx.copy.brand}">Brand</th>
-        <th th:text="#{rx.copy.generic}">Generic</th>
-        <th th:text="#{rx.review.dose}">Dose</th>
-        <th th:text="#{rx.review.frequency}">Frequency</th>
-        <th th:text="#{rx.review.duration}">Duration</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:each="item : ${items}">
-        <td th:text="${item.rawText}">brand</td>
-        <td th:text="${itemMetas[item.id] != null ? itemMetas[item.id].aiGeneric : ''}">generic</td>
-        <td th:text="${item.dose}">dose</td>
-        <td th:text="${item.frequency}">freq</td>
-        <td th:text="${item.duration}">dur</td>
-      </tr>
-      </tbody>
-    </table>
+  <div class="mf-panel">
+    <p class="mb-1">
+      <strong th:text="#{rx.review.status}">Status</strong>:
+      <span th:replace="~{layout/fragments/status-badge :: badge(level='SUCCESS', label=${rx.status})}"></span>
+    </p>
+    <p class="mb-2 small text-muted" th:if="${meta.followUpDate != null}">
+      <span th:text="#{rx.review.follow_up}">Follow-up</span>:
+      <span th:text="${meta.followUpDate}">date</span>
+    </p>
+    <div class="table-responsive">
+      <table class="table mf-data-table align-middle">
+        <thead>
+        <tr>
+          <th th:text="#{rx.copy.brand}">Brand</th>
+          <th th:text="#{rx.copy.generic}">Generic</th>
+          <th th:text="#{rx.review.dose}">Dose</th>
+          <th th:text="#{rx.review.frequency}">Frequency</th>
+          <th th:text="#{rx.review.duration}">Duration</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${items}">
+          <td th:text="${item.rawText}">brand</td>
+          <td th:text="${generics != null and generics[item.id] != null ? generics[item.id] : (itemMetas[item.id] != null ? itemMetas[item.id].aiGeneric : '')}">generic</td>
+          <td th:text="${item.dose}">dose</td>
+          <td th:text="${item.frequency}">freq</td>
+          <td th:text="${item.duration}">dur</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
     <div class="mt-3">
       <div class="small text-muted" th:text="#{rx.copy.qr}">QR</div>
-      <!-- printable token; a real QR image can be added by T13 / frontend later -->
       <code class="user-select-all" th:text="${qrPayload}">mediflow:rx:…</code>
     </div>
+    <p class="small text-muted mt-3 mb-0" th:text="#{rx.copy.disclaimer}">Patient-readable copy — brand and generic shown.</p>
   </div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

@@ -321,3 +321,13 @@ a:focus-visible {
     font-size: var(--mf-fs-sm);
   }
 }
+
+/* Prescription AI review — amber fields (owned styling used by V2-07 templates) */
+.mf-ai-field {
+  border-color: #fedf89 !important;
+  background-color: var(--mf-ai-amber-bg);
+}
+.mf-ai-field:focus {
+  border-color: var(--mf-ai-amber) !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 104, 3, 0.15);
+}

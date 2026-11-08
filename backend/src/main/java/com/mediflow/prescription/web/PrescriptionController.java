@@ -5,9 +5,10 @@ import com.mediflow.prescription.domain.RxInputMode;
 import com.mediflow.prescription.domain.RxItemMeta;
 import com.mediflow.prescription.domain.RxPrescriptionMeta;
 import com.mediflow.prescription.domain.RxSafetyFlag;
+import com.mediflow.prescription.draft.DraftInbox;
 import com.mediflow.prescription.draft.DraftService;
+import com.mediflow.prescription.safety.RxDrugDictionary;
 import com.mediflow.prescription.repo.RxItemMetaRepository;
-import com.mediflow.prescription.repo.RxPrescriptionQueries;
 import com.mediflow.prescription.repo.RxSafetyFlagRepository;
 import com.mediflow.prescription.sign.RevokeService;
 import com.mediflow.prescription.sign.SignService;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -37,51 +39,75 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class PrescriptionController {
 
   private final DraftService drafts;
+  private final DraftInbox inbox;
   private final SignService sign;
   private final RevokeService revoke;
   private final AiGatewayService ai;
-  private final RxPrescriptionQueries prescriptions;
   private final RxItemMetaRepository itemMetas;
   private final RxSafetyFlagRepository flags;
   private final RxAccess access;
   private final CurrentUser currentUser;
+  private final RxDrugDictionary dictionary;
 
   public PrescriptionController(
       DraftService drafts,
+      DraftInbox inbox,
       SignService sign,
       RevokeService revoke,
       AiGatewayService ai,
-      RxPrescriptionQueries prescriptions,
       RxItemMetaRepository itemMetas,
       RxSafetyFlagRepository flags,
       RxAccess access,
-      CurrentUser currentUser) {
+      CurrentUser currentUser,
+      RxDrugDictionary dictionary) {
     this.drafts = drafts;
+    this.inbox = inbox;
     this.sign = sign;
     this.revoke = revoke;
     this.ai = ai;
-    this.prescriptions = prescriptions;
     this.itemMetas = itemMetas;
     this.flags = flags;
     this.access = access;
     this.currentUser = currentUser;
+    this.dictionary = dictionary;
   }
 
+  /**
+   * List drafts for the signed-in doctor. When {@code encounterId} is present (consultation deep
+   * link), open the existing draft or the new-draft form — never leave doctors typing a raw UUID.
+   */
   @GetMapping
-  @PreAuthorize("hasAnyRole('DOCTOR','PHARMACIST','ADMIN')")
-  public String index(Model model) {
+  @PreAuthorize("hasAnyRole('DOCTOR','PHARMACIST','ADMIN','PATIENT')")
+  public String index(@RequestParam(required = false) UUID encounterId, Model model) {
+    if (encounterId != null && currentUser.hasRole("DOCTOR")) {
+      DraftInbox.EncounterContext ctx = inbox.encounterContext(encounterId);
+      access.requireCanPrescribe(ctx.patientId(), encounterId);
+      Optional<Prescription> open = inbox.openDraftForEncounter(encounterId);
+      if (open.isPresent()) {
+        return "redirect:/prescriptions/" + open.get().getId();
+      }
+      return "redirect:/prescriptions/new?encounterId=" + encounterId;
+    }
+
     model.addAttribute("pageTitleKey", "rx.title.list");
-    // Lightweight: recent drafts/signed for the signed-in doctor via encounter would need more queries;
-    // show empty list hint — full inbox is a Wave-3 concern.
-    model.addAttribute("hint", true);
+    if (currentUser.hasRole("DOCTOR")) {
+      UUID doctor = access.requireDoctorUserId();
+      List<DraftInbox.DraftRow> draftsNeedingReview = inbox.draftsNeedingReview(doctor, 25);
+      model.addAttribute("drafts", draftsNeedingReview);
+    } else {
+      model.addAttribute("drafts", List.of());
+    }
     return "prescription/list";
   }
 
   @GetMapping("/new")
   @PreAuthorize("hasRole('DOCTOR')")
   public String newForm(@RequestParam UUID encounterId, Model model) {
+    DraftInbox.EncounterContext ctx = inbox.encounterContext(encounterId);
+    access.requireCanPrescribe(ctx.patientId(), encounterId);
     model.addAttribute("pageTitleKey", "rx.title.new");
     model.addAttribute("encounterId", encounterId);
+    model.addAttribute("encounter", ctx);
     return "prescription/new";
   }
 
@@ -179,7 +205,8 @@ public class PrescriptionController {
 
   @PostMapping("/{id}/items/{itemId}/delete")
   @PreAuthorize("hasRole('DOCTOR')")
-  public String deleteItem(@PathVariable UUID id, @PathVariable UUID itemId, RedirectAttributes flash) {
+  public String deleteItem(
+      @PathVariable UUID id, @PathVariable UUID itemId, RedirectAttributes flash) {
     drafts.deleteItem(id, itemId);
     flash.addFlashAttribute("successKey", "rx.flash.item_deleted");
     return "redirect:/prescriptions/" + id;
@@ -201,8 +228,11 @@ public class PrescriptionController {
 
   @PostMapping("/{id}/sign")
   @PreAuthorize("hasRole('DOCTOR')")
-  public String sign(@PathVariable UUID id, RedirectAttributes flash) {
-    sign.sign(id);
+  public String signRx(
+      @PathVariable UUID id,
+      @RequestParam(required = false) java.time.LocalDate followUpDate,
+      RedirectAttributes flash) {
+    sign.sign(id, followUpDate);
     flash.addFlashAttribute("successKey", "rx.flash.signed");
     return "redirect:/prescriptions/" + id + "/copy";
   }
@@ -242,7 +272,38 @@ public class PrescriptionController {
     model.addAttribute("meta", meta);
     model.addAttribute("items", lineItems);
     model.addAttribute("itemMetas", metaByItem);
+    Map<UUID, String> generics = new HashMap<>();
+    for (PrescriptionItem item : lineItems) {
+      if (item.getGenericId() != null) {
+        dictionary
+            .generic(item.getGenericId())
+            .ifPresent(g -> generics.put(item.getId(), g.name()));
+      } else if (metaByItem.containsKey(item.getId())
+          && metaByItem.get(item.getId()).getAiGeneric() != null) {
+        generics.put(item.getId(), metaByItem.get(item.getId()).getAiGeneric());
+      }
+    }
+    model.addAttribute("generics", generics);
     model.addAttribute("qrPayload", "mediflow:rx:" + id);
     return "prescription/copy";
+  }
+
+  @GetMapping("/{id}/photo")
+  @PreAuthorize("hasAnyRole('DOCTOR','PHARMACIST','ADMIN','PATIENT')")
+  public org.springframework.http.ResponseEntity<org.springframework.core.io.InputStreamResource> photo(
+      @PathVariable UUID id) {
+    Prescription rx = drafts.requirePrescription(id);
+    if (currentUser.hasRole("DOCTOR")) {
+      access.requireCanPrescribe(rx.getPatientId(), rx.getEncounterId());
+    }
+    return drafts
+        .photo(id)
+        .map(
+            blob ->
+                org.springframework.http.ResponseEntity.ok()
+                    .header(
+                        org.springframework.http.HttpHeaders.CONTENT_TYPE, blob.contentType())
+                    .body(new org.springframework.core.io.InputStreamResource(blob.stream())))
+        .orElse(org.springframework.http.ResponseEntity.notFound().build());
   }
 }

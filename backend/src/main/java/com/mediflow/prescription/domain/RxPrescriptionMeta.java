@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,4 +45,8 @@ public class RxPrescriptionMeta extends BaseEntity {
 
   @Column(name = "revoked_by")
   private UUID revokedBy;
+
+  /** Optional clinician follow-up date; when set at sign, publishes {@code FollowUpScheduled}. */
+  @Column(name = "follow_up_date")
+  private LocalDate followUpDate;
 }

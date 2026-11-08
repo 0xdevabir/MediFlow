@@ -195,6 +195,7 @@ class AccessMatrixPolicyTest {
     when(f.activeReferral(any(), any(), any())).thenReturn(false);
     when(f.activeBreakGlass(any(), any(), any())).thenReturn(false);
     when(f.activeRedAlert(any())).thenReturn(inScope);
+    when(f.erAssignedOnActiveAlert(any(), any())).thenReturn(inScope);
     when(f.openLabOrderForPatient(any(), any())).thenReturn(inScope);
     when(f.signedPrescriptionForPatient(any(), any())).thenReturn(inScope);
     return f;

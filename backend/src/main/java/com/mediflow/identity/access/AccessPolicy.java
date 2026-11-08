@@ -1,54 +1,6 @@
-package com.mediflow.identity.access;
-
-import com.mediflow.shared.domain.PrescriptionStatus;
-import com.mediflow.shared.domain.Role;
-import com.mediflow.shared.port.ClockPort;
-import java.time.Instant;
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Predicate;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-
-/**
- * Reusable {@code @PreAuthorize} bean, e.g. {@code @PreAuthorize("@access.canReadPatient(#patientId)")}
- * or {@code @PreAuthorize("@access.can('VITALS','C',#patientId)")}.
- *
- * <p>Deny by default: no authentication, unknown resource/action, a role without the cell, or a
- * patient outside the role's scope all return {@code false}. A user with several roles is allowed
- * if any role allows. A {@code null} patient id asks for list-level access (e.g. a lab worklist);
- * callers must then filter rows themselves. Admin cells marked ‡ (aggregate) never allow a single
- * patient's record.
- */
-@Component("access")
-public class AccessPolicy {
-
-  private final AccessFacts facts;
-  private final ClockPort clock;
-
-  public AccessPolicy(AccessFacts facts, ClockPort clock) {
-    this.facts = facts;
-    this.clock = clock;
-  }
-
-  // ---------------------------------------------------------------- task-named checks
-
-  /** Demographics read (row 1 of the matrix). */
-  public boolean canReadPatient(UUID patientId) {
-    return can(AccessResource.DEMOGRAPHICS, AccessAction.R, patientId);
-  }
-
-  /** Demographics update (patient: own contact details¹; front desk). */
-  public boolean canWritePatient(UUID patientId) {
-    return can(AccessResource.DEMOGRAPHICS, AccessAction.U, patientId);
-  }
-
-  /** Read one lab order; lab techs only while the lab is handling that order. */
+AccessPolicy.java 249L cognitive
+// /Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/V2-02-identity-staff-access/backend/src/main/java/com/mediflow/identity/access/AccessPolicy.java
+§ function function (L52-L67)
   public boolean canReadLabOrder(UUID labOrderId) {
     if (labOrderId == null) {
       return false;
@@ -65,11 +17,8 @@ public class AccessPolicy {
         ref.patientId(),
         scope -> scope == AccessScope.LINKED_LAB_ORDER && AccessRules.labOrderHandled(ref, now));
   }
-
-  /**
-   * Read one prescription. Drafts follow the "Draft prescription" row (doctor only); signed ones the
-   * "Signed e-prescription" row (patient, doctor, pharmacist). Pharmacists see signed ones only.
-   */
+// ... 5 lines omitted
+§ function function (L73-L93)
   public boolean canReadPrescription(UUID prescriptionId) {
     if (prescriptionId == null) {
       return false;
@@ -91,26 +40,8 @@ public class AccessPolicy {
             scope == AccessScope.LINKED_PRESCRIPTION
                 && AccessRules.SIGNED_STATUSES.contains(ref.status()));
   }
-
-  // ---------------------------------------------------------------- generic
-
-  /** SpEL-friendly variant: {@code @access.can('LAB_REPORTS','V',#patientId)}. */
-  public boolean can(String resource, String action, UUID patientId) {
-    try {
-      return can(AccessResource.valueOf(resource), AccessAction.valueOf(action), patientId);
-    } catch (IllegalArgumentException | NullPointerException e) {
-      return false;
-    }
-  }
-
-  public boolean can(AccessResource resource, AccessAction action, UUID patientId) {
-    return evaluate(resource, action, patientId, null);
-  }
-
-  /**
-   * True if the best cell the current user holds for this resource is marked minimum-necessary (R*,
-   * R†, R³): the caller must return only the reduced data set.
-   */
+// ... 20 lines omitted
+§ function function (L114-L133)
   public boolean minimumNecessary(String resource) {
     AccessResource res;
     try {
@@ -131,15 +62,8 @@ public class AccessPolicy {
     }
     return any;
   }
-
-  /** Whether the current user has doctor-level (assigned / ER / break-glass) access to the patient. */
-  public boolean isAssigned(UUID patientId) {
-    return can(AccessResource.CONSULTATION_NOTES, AccessAction.R, patientId)
-        && !currentRoles().contains(Role.ROLE_PATIENT);
-  }
-
-  // ---------------------------------------------------------------- core
-
+// ... 9 lines omitted
+§ function function (L143-L170)
   private boolean evaluate(
       AccessResource resource,
       AccessAction action,
@@ -168,7 +92,8 @@ public class AccessPolicy {
     }
     return false;
   }
-
+// ... 1 lines omitted
+§ function function (L172-L211)
   private boolean inScope(
       AccessScope scope,
       AccessResource resource,
@@ -197,8 +122,12 @@ public class AccessPolicy {
                           || facts.activeBreakGlass(uid, patientId, now))
               .orElse(false);
       case ER_ASSIGNED ->
-          facts.activeRedAlert(patientId)
-              || ctx.userId().map(uid -> facts.activeBreakGlass(uid, patientId, now)).orElse(false);
+          ctx.userId()
+              .map(
+                  uid ->
+                      facts.erAssignedOnActiveAlert(uid, patientId)
+                          || facts.activeBreakGlass(uid, patientId, now))
+              .orElse(false);
       // Object-level checks (one order / one prescription) use only that object's link, so a lab
       // tech cannot read a cancelled order just because the patient has another open one.
       case LINKED_LAB_ORDER ->
@@ -209,7 +138,8 @@ public class AccessPolicy {
               : facts.signedPrescriptionForPatient(patientId, now);
     };
   }
-
+// ... 1 lines omitted
+§ function function (L213-L219)
   private Set<Role> currentRoles() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
@@ -217,7 +147,8 @@ public class AccessPolicy {
     }
     return roles(auth);
   }
-
+// ... 1 lines omitted
+§ function function (L221-L231)
   public static Set<Role> roles(Authentication auth) {
     EnumSet<Role> roles = EnumSet.noneOf(Role.class);
     for (GrantedAuthority authority : auth.getAuthorities()) {
@@ -229,21 +160,5 @@ public class AccessPolicy {
     }
     return roles;
   }
-
-  /** Lazily resolves the app_user id once per check. */
-  private final class Context {
-    private final String username;
-    private Optional<UUID> userId;
-
-    Context(String username) {
-      this.username = username;
-    }
-
-    Optional<UUID> userId() {
-      if (userId == null) {
-        userId = username == null ? Optional.empty() : facts.userIdByUsername(username);
-      }
-      return userId;
-    }
-  }
-}
+7/28 chunks shown (1117 tokens)
+[lean-ctx] full source: read "/Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/V2-02-identity-staff-access/backend/src/main/java/com/mediflow/identity/access/AccessPolicy.java" directly (no MCP)  ·  or ctx_read("/Users/mdabirhossain/Documents/WebDevelopment/Shared-Startups/MediFlow-wt/V2-02-identity-staff-access/backend/src/main/java/com/mediflow/identity/access/AccessPolicy.java", mode="full")

@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('clinical.consult.summary.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{clinical.consult.summary.title}">Patient-readable summary</h1>
-  <pre class="bg-white border rounded p-3" th:text="${summary}">summary</pre>
-  <a class="btn btn-link" th:href="@{/clinical/consultations/{id}(id=${encounterId})}" th:text="#{clinical.consult.open}">Back</a>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='clinical.consult.summary.title', subtitleKey=null)}"></div>
+  <section class="mf-panel p-3">
+    <pre class="mb-0" style="white-space: pre-wrap" th:text="${summary}">Summary</pre>
+  </section>
+  <a class="btn btn-outline-secondary mt-3"
+     th:href="@{/clinical/consultations/{id}(id=${encounterId})}"
+     th:text="#{clinical.consult.open}">Back</a>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

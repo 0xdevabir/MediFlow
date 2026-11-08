@@ -4,7 +4,7 @@ import com.mediflow.shared.domain.VitalObservation;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Builds a simple SVG polyline point list for vitals trends (inline SVG, no Chart.js). */
+/** Builds a simple SVG polyline point list for vitals trends (CSS/SVG sparkline fallback when Chart.js is unavailable). */
 public final class TrendSvg {
 
   private TrendSvg() {}

@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('clinical.vitals.entry.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{clinical.vitals.entry.title}">Record vitals</h1>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='clinical.vitals.entry.title', subtitleKey=null)}"></div>
 
   <div th:if="${parseErrorKey}" class="alert alert-danger" role="alert">
     <span th:text="${parseErrorVital}"></span>:
@@ -22,13 +23,14 @@
     </span>
   </div>
 
-  <form th:action="@{/clinical/vitals/entry/{id}(id=${encounterId})}" method="post" class="card card-body shadow-sm">
+  <form th:action="@{/clinical/vitals/entry/{id}(id=${encounterId})}" method="post" class="mf-panel p-3">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
     <div class="row g-3">
       <div class="col-md-4" th:each="t : ${types}">
-        <label class="form-label" th:text="${t.displayEn()}">HR</label>
+        <label class="form-label" th:for="|vital_${t.code()}|" th:text="${t.displayEn()}">HR</label>
         <input class="form-control"
-               th:classappend="${colours != null and colours[t.code()] != null} ? ${colours[t.code()]} : ''"
+               th:id="|vital_${t.code()}|"
+               th:classappend="${colours != null and colours[t.code()] != null} ? ${colours[t.code()] } : ''"
                th:name="|vital_${t.code()}|"
                th:value="${values[t.code()]}"
                th:placeholder="${t.kind().name() == 'BLOOD_PRESSURE'} ? '120/80' : ''"/>
@@ -55,17 +57,17 @@
       </ul>
     </div>
 
-    <div class="mt-4 d-flex gap-2">
+    <div class="mt-4 d-flex flex-wrap gap-2 sticky-bottom bg-white py-2">
       <button type="submit" name="preview" value="1" class="btn btn-outline-primary" th:text="#{clinical.vitals.preview}">Classify</button>
-      <button type="submit" class="btn btn-primary" th:text="#{clinical.vitals.save}">Save</button>
+      <button type="submit" class="btn btn-teal" th:text="#{clinical.vitals.save}">Save</button>
       <a class="btn btn-link" th:href="@{/clinical/consultations/{id}(id=${encounterId})}" th:text="#{clinical.consult.open}">Open consult</a>
     </div>
   </form>
 </main>
 <style>
-  .vital-normal { background-color: #d1e7dd !important; }
-  .vital-borderline { background-color: #fff3cd !important; }
-  .vital-critical { background-color: #f8d7da !important; }
+  .vital-normal { background-color: color-mix(in srgb, var(--mf-success, #198754) 18%, white) !important; }
+  .vital-borderline { background-color: color-mix(in srgb, var(--mf-urgent, #d97706) 18%, white) !important; }
+  .vital-critical { background-color: color-mix(in srgb, var(--mf-critical, #be123c) 18%, white) !important; }
 </style>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

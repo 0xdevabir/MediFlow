@@ -7,11 +7,17 @@ import com.mediflow.shared.repo.ConsentRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Default {@link PatientConsentGateway}: writes the shared consent table directly. */
+/**
+ * Canonical registration consent writer for the shared {@code consent} table.
+ * Marked {@code @Primary} so any future identity adapter does not double-bind
+ * {@link PatientConsentGateway} at registration.
+ */
 @Component
+@Primary
 public class RepositoryPatientConsentGateway implements PatientConsentGateway {
 
   private final ConsentRepository consents;

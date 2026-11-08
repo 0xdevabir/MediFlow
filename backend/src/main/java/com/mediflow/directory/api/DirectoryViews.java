@@ -12,11 +12,15 @@ public final class DirectoryViews {
 
   private DirectoryViews() {}
 
-  /** Search filters; every field optional. {@code department} is a clinical department name. */
-  public record SearchCriteria(String q, UUID hospitalId, String department, LocalDate date) {
+  /**
+   * Search filters; every field optional. {@code department} is a clinical department name; {@code
+   * specialty} matches practitioner specialty exactly (case-insensitive).
+   */
+  public record SearchCriteria(
+      String q, UUID hospitalId, String department, String specialty, LocalDate date) {
 
     public static SearchCriteria all() {
-      return new SearchCriteria(null, null, null, null);
+      return new SearchCriteria(null, null, null, null, null);
     }
 
     public String normalizedQuery() {
@@ -25,6 +29,10 @@ public final class DirectoryViews {
 
     public String normalizedDepartment() {
       return department == null || department.isBlank() ? null : department.trim();
+    }
+
+    public String normalizedSpecialty() {
+      return specialty == null || specialty.isBlank() ? null : specialty.trim();
     }
   }
 
@@ -48,6 +56,11 @@ public final class DirectoryViews {
 
     public boolean isBranch() {
       return parentId != null;
+    }
+
+    /** True when an emergency contact number is published for the card. */
+    public boolean hasEmergencyPhone() {
+      return emergencyPhone != null && !emergencyPhone.isBlank();
     }
   }
 
@@ -77,7 +90,12 @@ public final class DirectoryViews {
       int remaining) {}
 
   /** A test patients may book without a doctor (F1); price is shown before booking. */
-  public record DirectTest(UUID id, String code, String name, String loincCode, BigDecimal price) {}
+  public record DirectTest(UUID id, String code, String name, String loincCode, BigDecimal price) {
+
+    public boolean hasPrice() {
+      return price != null;
+    }
+  }
 
   /** F3 bundle of direct tests. {@code hospitalId} null = offered at every hospital. */
   public record TestPackage(
@@ -86,7 +104,12 @@ public final class DirectoryViews {
       UUID hospitalId,
       String hospitalName,
       BigDecimal price,
-      List<DirectTest> tests) {}
+      List<DirectTest> tests) {
+
+    public boolean hasPrice() {
+      return price != null;
+    }
+  }
 
   public record HospitalOption(UUID id, String label) {}
 }

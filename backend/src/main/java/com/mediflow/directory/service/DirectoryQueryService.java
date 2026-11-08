@@ -145,6 +145,11 @@ public class DirectoryQueryService {
   }
 
   @Transactional(readOnly = true)
+  public List<String> specialtyNames() {
+    return jdbc.specialtyNames();
+  }
+
+  @Transactional(readOnly = true)
   public List<DirectTest> directTests() {
     return jdbc.directTests();
   }

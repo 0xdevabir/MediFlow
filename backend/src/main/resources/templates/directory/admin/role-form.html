@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('directory.admin.roles')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5" style="max-width: 720px;">
+<main id="main" class="container mf-panel-narrow mb-5" style="max-width: 46rem;">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h4 mb-3" th:text="#{directory.admin.roles}">Doctor role</h1>
-  <form th:action="@{/directory/admin/roles}" method="post" class="border rounded p-3 bg-white">
+  <header class="mb-4">
+    <h1 class="mf-page-title" th:text="#{directory.admin.roles}">Doctor role</h1>
+  </header>
+  <form th:action="@{/directory/admin/roles}" method="post" class="mf-panel">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
     <input type="hidden" name="id" th:if="${role != null}" th:value="${role.roleId()}"/>
     <div class="mb-3">
@@ -37,14 +40,15 @@
                 th:text="${role != null ? role.schedule() : '[]'}"></textarea>
       <div class="form-text" th:text="#{directory.admin.schedule.help}">JSON help</div>
     </div>
-    <div class="form-check mb-3">
+    <div class="form-check mb-4">
       <input class="form-check-input" type="checkbox" id="active" name="active" value="true"
              th:checked="${role == null or role.active()}"/>
       <label class="form-check-label" for="active" th:text="#{directory.admin.active}">Active</label>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
       <button class="btn btn-teal" type="submit" th:text="#{directory.admin.save}">Save</button>
-      <a class="btn btn-outline-secondary" th:href="@{/directory/admin}" th:text="#{directory.admin.cancel}">Cancel</a>
+      <a class="btn btn-outline-secondary" th:href="@{/directory/admin}"
+         th:text="#{directory.admin.cancel}">Cancel</a>
     </div>
   </form>
 </main>

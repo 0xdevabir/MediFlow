@@ -1,6 +1,7 @@
 package com.mediflow.fhir.service;
 
 import com.mediflow.fhir.FhirIds;
+import com.mediflow.fhir.FhirSystems;
 import com.mediflow.fhir.mapper.FhirResourceMapper;
 import com.mediflow.fhir.repo.FhirDataStore;
 import com.mediflow.shared.domain.Allergy;
@@ -37,16 +38,19 @@ public class FhirEverythingService {
   private final FhirResourceMapper mapper;
   private final FhirAccessGuard access;
   private final FhirAuditService fhirAudit;
+  private final FhirSystems systems;
 
   public FhirEverythingService(
       FhirDataStore data,
       FhirResourceMapper mapper,
       FhirAccessGuard access,
-      FhirAuditService fhirAudit) {
+      FhirAuditService fhirAudit,
+      FhirSystems systems) {
     this.data = data;
     this.mapper = mapper;
     this.access = access;
     this.fhirAudit = fhirAudit;
+    this.systems = systems;
   }
 
   @Transactional(readOnly = true)
@@ -133,14 +137,19 @@ public class FhirEverythingService {
     return bundle;
   }
 
-  private static void add(Bundle bundle, Resource resource) {
+  private void add(Bundle bundle, Resource resource) {
     if (resource == null) {
       return;
     }
     Bundle.BundleEntryComponent entry = bundle.addEntry();
     entry.setResource(resource);
     if (resource.getIdElement() != null && resource.getIdElement().getIdPart() != null) {
-      entry.setFullUrl(resource.getResourceType().name() + "/" + resource.getIdElement().getIdPart());
+      entry.setFullUrl(
+          systems.fhirBase()
+              + "/"
+              + resource.getResourceType().name()
+              + "/"
+              + resource.getIdElement().getIdPart());
     }
   }
 }

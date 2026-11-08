@@ -98,7 +98,7 @@
             <dd class="col-sm-8" th:text="${h.phone() != null ? h.phone() : '—'}">—</dd>
             <dt class="col-sm-4" th:text="#{directory.hospital.emergency}">Emergency</dt>
             <dd class="col-sm-8">
-              <a th:if="${h.hasEmergencyPhone()}" class="fw-semibold text-decoration-none"
+              <a th:if="${h.hasEmergencyPhone()}" class="mf-emergency-call"
                  th:href="'tel:' + ${h.emergencyPhone()}"
                  th:text="${h.emergencyPhone()}">999</a>
               <span th:unless="${h.hasEmergencyPhone()}">—</span>

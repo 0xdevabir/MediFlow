@@ -1,25 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('queue.patient.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{queue.patient.title}">Your status</h1>
-  <div th:if="${status == null}" class="text-muted" th:text="#{queue.patient.none}">None</div>
-  <div th:if="${status != null}" id="queue-status"
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='queue.patient.title', subtitleKey='queue.patient.subtitle')}"></div>
+
+  <div th:if="${status == null}"
+       th:replace="~{layout/fragments/empty-state :: empty('queue.patient.none', 'queue.patient.noneHint')}"></div>
+
+  <div th:if="${status != null}" id="queue-status" class="mf-token-card text-center p-4"
        th:attr="data-appointment-id=${status.appointmentId()}">
-    <p>
-      <span th:text="#{queue.patient.token}">Token</span>:
-      <strong id="tokenNo" th:text="${status.tokenNo()}">T001</strong>
-    </p>
-    <p id="aheadLine"
+    <p class="text-muted mb-2" th:text="#{queue.patient.token}">Your token</p>
+    <p class="mf-token-display display-3 fw-bold mb-3" id="tokenNo" th:text="${status.tokenNo()}">T001</p>
+    <p class="fs-5 mb-3" id="aheadLine"
+       th:attr="data-ahead-template=#{queue.patient.ahead}"
        th:text="#{queue.patient.ahead(${status.ahead()})}">0 ahead</p>
-    <p class="text-muted small" th:text="#{queue.patient.polling}">polling</p>
+    <div th:replace="~{layout/fragments/live-region :: region('queue-live', 'polite')}"></div>
+    <p class="text-muted small mt-3 mb-0" th:text="#{queue.patient.polling}">polling</p>
   </div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 <script th:if="${status != null}" th:src="@{/js/appointment-queue.js}"
-        th:attr="data-appointment-id=${status.appointmentId()}, data-mode=patient"></script>
+        th:attr="data-appointment-id=${status.appointmentId()}, data-mode=patient,
+                 data-live-id=queue-live,
+                 data-ahead-msg=#{queue.patient.ahead}"></script>
 </body>
 </html>

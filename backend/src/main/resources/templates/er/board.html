@@ -1,22 +1,41 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('er.board.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{er.board.title}">ER</h1>
-  <div th:if="${alerts == null or alerts.isEmpty()}" class="text-muted" th:text="#{er.board.empty}">Empty</div>
-  <div class="list-group" th:if="${alerts != null}">
-    <a class="list-group-item list-group-item-action list-group-item-danger"
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='er.board.title', subtitleKey='er.board.subtitle')}"></div>
+
+  <p class="mb-3" th:if="${activeCount != null}">
+    <span th:replace="~{layout/fragments/status-badge :: badgeKey('CRITICAL', 'er.board.activeCount')}"></span>
+    <span class="ms-2 text-muted" th:text="#{er.board.activeValue(${activeCount})}">0 open</span>
+  </p>
+
+  <div th:if="${alerts == null or alerts.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty('er.board.empty', 'er.board.emptyHint')}"></div>
+
+  <div class="list-group mf-worklist" th:if="${alerts != null and !alerts.isEmpty()}">
+    <a class="list-group-item list-group-item-action mf-worklist-item mf-priority-critical"
        th:each="a : ${alerts}"
        th:href="@{/er/{id}(id=${a.id})}">
-      <div class="d-flex justify-content-between">
-        <strong th:with="p=${patients.get(a.patientId)}"
-                th:text="${p != null ? (p.givenName + ' ' + p.familyName + ' (' + p.mrn + ')') : a.patientId}">Patient</strong>
-        <span th:text="${a.raisedAt}">time</span>
+      <div class="d-flex flex-wrap justify-content-between gap-2">
+        <div>
+          <strong th:with="p=${patients.get(a.patientId)}"
+                  th:text="${p != null ? (p.givenName + ' ' + p.familyName + ' (' + p.mrn + ')') : a.patientId}">Patient</strong>
+          <div class="small text-muted mt-1" th:text="${a.reason}">reason</div>
+        </div>
+        <div class="text-end">
+          <span th:replace="~{layout/fragments/status-badge :: badge('CRITICAL', ${a.level})}"></span>
+          <div class="small mt-1" th:text="${a.raisedAt}">time</div>
+          <div class="small" th:with="e=${ext.get(a.id)}"
+               th:if="${e != null and e.assignedErUserId() != null}">
+            <span th:text="#{er.board.assignee}">Assignee</span>:
+            <span th:text="${assigneeNames.getOrDefault(e.assignedErUserId(), e.assignedErUserId())}">ER</span>
+          </div>
+        </div>
       </div>
-      <small th:text="${a.reason}">reason</small>
     </a>
   </div>
 </main>

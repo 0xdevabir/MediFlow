@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Raises Red Alerts for CRITICAL triage / vitals: notifies ER + duty doctors, removes the patient
- * from the OPD queue, and records {@code assigned_er_user_id} for T01 scoped access.
+ * from the OPD queue, and always sets {@code assigned_er_user_id} when ER staff exist (V2-02 ACL).
  */
 @Service
 public class RedAlertService {
@@ -42,6 +42,7 @@ public class RedAlertService {
   private final ApptEncounterRepository encounters;
   private final ApptPatientRepository patients;
   private final ApptUserRepository users;
+  private final ErStaffQueries erStaff;
   private final QueueService queueService;
   private final CurrentUser currentUser;
   private final ApplicationEventPublisher events;
@@ -56,6 +57,7 @@ public class RedAlertService {
       ApptEncounterRepository encounters,
       ApptPatientRepository patients,
       ApptUserRepository users,
+      ErStaffQueries erStaff,
       QueueService queueService,
       CurrentUser currentUser,
       ApplicationEventPublisher events,
@@ -68,6 +70,7 @@ public class RedAlertService {
     this.encounters = encounters;
     this.patients = patients;
     this.users = users;
+    this.erStaff = erStaff;
     this.queueService = queueService;
     this.currentUser = currentUser;
     this.events = events;
@@ -109,9 +112,9 @@ public class RedAlertService {
         .ifPresent(alert::setEncounterId);
     alert = alerts.saveAndFlush(alert);
 
-    // Prefer a specific ER assignee when one is logged in; else leave null (T01: any ER).
-    UUID assignedEr =
-        currentUser.hasRole("ER") ? currentUser.userId().orElse(null) : pickErAssignee();
+    // Always set assignee when any ROLE_ER exists (V2-02 ACL). Prefer logged-in ER, else
+    // on-duty / least-loaded ER for the hospital.
+    UUID assignedEr = resolveAssignee(appt.getHospitalId());
     alerts.updateExt(alert.getId(), assignedEr, source, null, null, null, null);
 
     appt.setPriorityLevel(TriageLevel.CRITICAL);
@@ -197,7 +200,8 @@ public class RedAlertService {
       alert.setAcknowledgedAt(now);
       alerts.save(alert);
     }
-    alerts.updateExt(alert.getId(), actor, null, actor, null, null, null);
+    // Keep original raise assignee; only set acknowledged_by.
+    alerts.updateExt(alert.getId(), null, null, actor, null, null, null);
     audit.record(
         actor,
         alert.getPatientId(),
@@ -250,9 +254,24 @@ public class RedAlertService {
     return alert;
   }
 
-  private UUID pickErAssignee() {
-    List<AppUser> ers = users.findEnabledByRole(Role.ROLE_ER);
-    return ers.isEmpty() ? null : ers.get(0).getId();
+  /**
+   * Prefer the signed-in ER user; otherwise least-loaded on-duty ER for the hospital. Returns null
+   * only when no enabled {@code ROLE_ER} user exists.
+   */
+  UUID resolveAssignee(UUID hospitalId) {
+    if (currentUser.hasRole("ER")) {
+      UUID self = currentUser.userId().orElse(null);
+      if (self != null) {
+        return self;
+      }
+    }
+    List<UUID> candidates = erStaff.erCandidatesForHospital(hospitalId);
+    return candidates.isEmpty() ? null : candidates.get(0);
+  }
+
+  /** Display name for ER board/detail assignee column. */
+  public String assigneeName(UUID userId) {
+    return erStaff.displayName(userId);
   }
 
   private void notifyStaff(Appointment appt, String summary) {

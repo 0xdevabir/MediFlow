@@ -1,35 +1,44 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('appointment.book.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{appointment.book.title}">Book</h1>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='appointment.book.title', subtitleKey='appointment.book.subtitle')}"></div>
+
   <form class="row g-2 mb-4" method="get" th:action="@{/appointments/book}">
     <div class="col-md-4">
-      <input class="form-control" name="hospitalId" th:value="${hospitalId}" placeholder="Hospital UUID">
+      <label class="form-label" for="book-hospital" th:text="#{appointment.book.hospitalId}">Hospital</label>
+      <input class="form-control" id="book-hospital" name="hospitalId" th:value="${hospitalId}"
+             th:placeholder="#{appointment.book.hospitalId}">
     </div>
     <div class="col-md-4">
-      <input class="form-control" name="doctorId" th:value="${doctorId}" placeholder="Doctor UUID">
+      <label class="form-label" for="book-doctor" th:text="#{appointment.book.doctorId}">Doctor</label>
+      <input class="form-control" id="book-doctor" name="doctorId" th:value="${doctorId}"
+             th:placeholder="#{appointment.book.doctorId}">
     </div>
-    <div class="col-md-4">
-      <button class="btn btn-outline-secondary" type="submit" th:text="#{queue.board.load}">Load</button>
+    <div class="col-md-4 d-flex align-items-end">
+      <button class="btn btn-outline-secondary w-100" type="submit" th:text="#{queue.board.load}">Load</button>
     </div>
   </form>
+
   <p th:text="#{appointment.book.pickSlot}">Pick</p>
   <form method="post" th:action="@{/appointments/book}">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
     <div class="mb-3" th:if="${onBehalf}">
-      <label class="form-label" th:text="#{appointment.book.patientId}">Patient</label>
-      <input class="form-control" name="patientId" th:value="${patientId}" required>
+      <label class="form-label" for="book-patient" th:text="#{appointment.book.patientId}">Patient</label>
+      <input class="form-control" id="book-patient" name="patientId" th:value="${patientId}" required>
       <div class="form-check mt-2">
         <input class="form-check-input" type="checkbox" name="emergency" value="true" id="emergency">
         <label class="form-check-label" for="emergency" th:text="#{appointment.book.emergency}">Emergency</label>
       </div>
-      <input class="form-control mt-2" name="emergencyNote" th:placeholder="#{appointment.book.emergencyNote}">
+      <label class="form-label mt-2" for="emergency-note" th:text="#{appointment.book.emergencyNote}">Note</label>
+      <input class="form-control" id="emergency-note" name="emergencyNote"
+             th:placeholder="#{appointment.book.emergencyNote}">
     </div>
-    <div class="list-group mb-3">
+    <div class="list-group mb-3" th:if="${slots != null and !slots.isEmpty()}">
       <label class="list-group-item" th:each="s : ${slots}">
         <input class="form-check-input me-2" type="radio" name="slotId" th:value="${s.slotId()}" required>
         <strong th:text="${s.doctorName()}">Doctor</strong>
@@ -41,7 +50,10 @@
         (<span th:text="${s.remaining()}">0</span> left)
       </label>
     </div>
-    <button class="btn btn-primary" type="submit" th:text="#{appointment.book.submit}">Book</button>
+    <div th:if="${slots == null or slots.isEmpty()}"
+         th:replace="~{layout/fragments/empty-state :: empty('appointment.book.noSlots', 'appointment.book.noSlotsHint')}"></div>
+    <button class="btn btn-teal" type="submit" th:if="${slots != null and !slots.isEmpty()}"
+            th:text="#{appointment.book.submit}">Book</button>
   </form>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

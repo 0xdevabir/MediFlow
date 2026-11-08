@@ -1,24 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head('appointment.detail.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{appointment.detail.title}">Appointment</h1>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='appointment.detail.title', subtitleKey=null)}"></div>
+
   <dl class="row">
-    <dt class="col-sm-3">Status</dt><dd class="col-sm-9" th:text="${appointment.status}">BOOKED</dd>
-    <dt class="col-sm-3">Priority</dt><dd class="col-sm-9" th:text="${appointment.priorityLevel}">NORMAL</dd>
-    <dt class="col-sm-3">Booked</dt><dd class="col-sm-9" th:text="${appointment.bookedAt}">t</dd>
+    <dt class="col-sm-3" th:text="#{appointment.detail.status}">Status</dt>
+    <dd class="col-sm-9">
+      <span th:replace="~{layout/fragments/status-badge :: badge(${appointment.priorityLevel != null ? appointment.priorityLevel : 'NORMAL'}, ${appointment.status})}"></span>
+    </dd>
+    <dt class="col-sm-3" th:text="#{appointment.detail.priority}">Priority</dt>
+    <dd class="col-sm-9" th:text="${appointment.priorityLevel}">NORMAL</dd>
+    <dt class="col-sm-3" th:text="#{appointment.detail.booked}">Booked</dt>
+    <dd class="col-sm-9" th:text="${appointment.bookedAt}">t</dd>
     <dt class="col-sm-3" th:if="${meta != null}" th:text="#{appointment.detail.checkinCode}">Code</dt>
     <dd class="col-sm-9" th:if="${meta != null}" th:text="${meta.checkinCode}">CODE</dd>
-    <dt class="col-sm-3" th:if="${patient != null}">Patient</dt>
+    <dt class="col-sm-3" th:if="${patient != null}" th:text="#{appointment.detail.patient}">Patient</dt>
     <dd class="col-sm-9" th:if="${patient != null}"
         th:text="${patient.givenName + ' ' + patient.familyName + ' (' + patient.mrn + ')'}">Name</dd>
-    <dt class="col-sm-3" th:if="${slot != null}">Slot</dt>
+    <dt class="col-sm-3" th:if="${slot != null}" th:text="#{appointment.detail.slot}">Slot</dt>
     <dd class="col-sm-9" th:if="${slot != null}"
         th:text="${slot.doctorName() + ' · ' + slot.startsAt()}">slot</dd>
   </dl>
+
   <div class="d-flex gap-2 flex-wrap">
     <form method="post" th:action="@{/appointments/{id}/cancel(id=${appointment.id})}"
           th:if="${appointment.status.name() == 'BOOKED'}">
@@ -35,7 +44,8 @@
       <input type="hidden" name="note" value="Suspected emergency at desk">
       <button class="btn btn-warning" type="submit" th:text="#{appointment.detail.flagEmergency}">Flag</button>
     </form>
-    <a class="btn btn-link" th:href="@{/queue/me}" sec:authorize="hasRole('PATIENT')">Queue status</a>
+    <a class="btn btn-link" th:href="@{/queue/me}" sec:authorize="hasRole('PATIENT')"
+       th:text="#{appointment.detail.queueStatus}">Queue status</a>
   </div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

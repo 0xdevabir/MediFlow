@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  Role home tiles for V2-01 home.html wire-up (request in docs/plan/requests/V2-05.md).
+  Counts via @appointmentHomeStats bean — no HomeController change required once included.
+*/-->
+
+<section th:fragment="frontDesk" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{appointment.home.fd.title}">Check-in &amp; queue</h3>
+  <p class="mf-tile-meta"
+     th:text="#{appointment.home.fd.body(${@appointmentHomeStats.waitingToday()}, ${@appointmentHomeStats.emergencyFlagsToday()})}">
+    Waiting today
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-teal" th:href="@{/queue}" th:text="#{appointment.home.cta.queue}">Queue</a>
+    <a class="btn btn-sm btn-outline-secondary" th:href="@{/appointments/check-in}"
+       th:text="#{appointment.home.cta.checkin}">Check-in</a>
+  </div>
+</section>
+
+<section th:fragment="nurse" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{appointment.home.nurse.title}">Triage &amp; queue</h3>
+  <p class="mf-tile-meta"
+     th:text="#{appointment.home.nurse.body(${@appointmentHomeStats.waitingToday()}, ${@appointmentHomeStats.activeRedAlerts()})}">
+    Waiting / alerts
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-teal" th:href="@{/queue}" th:text="#{appointment.home.cta.queue}">Queue</a>
+    <a class="btn btn-sm btn-outline-secondary" th:href="@{/er}" th:text="#{appointment.home.cta.er}">ER</a>
+  </div>
+</section>
+
+<section th:fragment="doctor" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{appointment.home.doctor.title}">OPD queue</h3>
+  <p class="mf-tile-meta"
+     th:text="#{appointment.home.doctor.body(${@appointmentHomeStats.waitingToday()})}">
+    Patients waiting today
+  </p>
+  <a class="btn btn-sm btn-teal" th:href="@{/queue/doctor}" th:text="#{appointment.home.cta.doctorQueue}">My queue</a>
+</section>
+
+<section th:fragment="er" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{appointment.home.er.title}">Active Red Alerts</h3>
+  <p class="mf-tile-meta"
+     th:text="#{appointment.home.er.body(${@appointmentHomeStats.activeRedAlerts()})}">
+    Open alerts
+  </p>
+  <a class="btn btn-sm btn-teal" th:href="@{/er}" th:text="#{appointment.home.cta.er}">ER board</a>
+</section>
+</body>
+</html>

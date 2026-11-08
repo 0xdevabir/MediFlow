@@ -91,8 +91,18 @@ public class ConsultationController {
       @PathVariable UUID encounterId,
       @RequestParam String testCode,
       RedirectAttributes redirect) {
-    consultations.orderLab(encounterId, testCode);
-    redirect.addFlashAttribute("successKey", "clinical.consult.labRequested");
+    UUID orderId = consultations.orderLab(encounterId, testCode);
+    boolean nil = orderId.getMostSignificantBits() == 0L && orderId.getLeastSignificantBits() == 0L;
+    if (nil) {
+      redirect.addFlashAttribute("successKey", "clinical.consult.labRequestedPending");
+    } else {
+      redirect.addFlashAttribute(
+          "successMessage",
+          "Lab order " + orderId + " created. View encounter orders at /lab/encounters/"
+              + encounterId
+              + "/orders");
+      redirect.addFlashAttribute("labOrderId", orderId);
+    }
     return "redirect:/clinical/consultations/" + encounterId;
   }
 
@@ -121,3 +131,4 @@ public class ConsultationController {
     return series;
   }
 }
+

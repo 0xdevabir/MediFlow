@@ -11,14 +11,30 @@ import com.mediflow.notification.repo.StaffCallEntryRepository;
 import com.mediflow.notification.service.NotificationService;
 import com.mediflow.notification.service.NotificationService.Request;
 import com.mediflow.shared.domain.AppUser;
+import com.mediflow.shared.domain.Appointment;
+import com.mediflow.shared.domain.AppointmentStatus;
+import com.mediflow.shared.domain.Department;
+import com.mediflow.shared.domain.Hospital;
 import com.mediflow.shared.domain.Notification;
 import com.mediflow.shared.domain.NotificationStatus;
 import com.mediflow.shared.domain.Patient;
+import com.mediflow.shared.domain.Practitioner;
+import com.mediflow.shared.domain.PractitionerRoleEntity;
+import com.mediflow.shared.domain.Slot;
 import com.mediflow.shared.domain.Role;
 import com.mediflow.shared.domain.TriageLevel;
 import com.mediflow.shared.event.DomainEvents;
+import com.mediflow.shared.port.AdherenceQueryPort;
 import com.mediflow.shared.port.NotificationPort;
+import com.mediflow.shared.repo.AppointmentRepository;
+import com.mediflow.shared.repo.DepartmentRepository;
+import com.mediflow.shared.repo.HospitalRepository;
+import com.mediflow.shared.repo.PractitionerRepository;
+import com.mediflow.shared.repo.PractitionerRoleEntityRepository;
+import com.mediflow.shared.repo.SlotRepository;
+import com.mediflow.notification.service.AdherenceQueryService;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +54,13 @@ class NotificationDeliveryIT extends NotificationTestSupport {
   @Autowired NotificationPort port;
   @Autowired MessageSource messages;
   @Autowired StaffCallEntryRepository callList;
+  @Autowired AdherenceQueryPort adherencePort;
+  @Autowired HospitalRepository hospitals;
+  @Autowired DepartmentRepository departments;
+  @Autowired PractitionerRepository practitioners;
+  @Autowired PractitionerRoleEntityRepository roles;
+  @Autowired SlotRepository slots;
+  @Autowired AppointmentRepository appointments;
 
   private void publish(Object event) {
     // Publish inside a committed transaction, as the owning modules do.
@@ -232,6 +255,92 @@ class NotificationDeliveryIT extends NotificationTestSupport {
           assertThat(n.getSubject()).isEqualTo("Hello");
           assertThat(meta(n).getEventType()).isEqualTo(NotificationEventType.DIRECT);
         });
+  }
+
+
+  @Test
+  void adherenceQueryPortDelegatesToReminderServiceBean() {
+    assertThat(adherencePort).isInstanceOf(AdherenceQueryService.class);
+  }
+
+  @Test
+  void practitionerScheduleChangedWithNoSlotsIsNoOp() {
+    AppUser u = newUser("en", Role.ROLE_PATIENT);
+    Patient p = newPatient(u.getId(), "01711000091", null);
+    publish(
+        new DomainEvents.PractitionerScheduleChanged(
+            UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of(), Instant.now()));
+    assertThat(forPatient(p.getId())).isEmpty();
+  }
+
+  @Test
+  void practitionerScheduleChangedNotifiesBookedPatient() {
+    AppUser patientUser = newUser("en", Role.ROLE_PATIENT);
+    Patient patient = newPatient(patientUser.getId(), "01711000092", "sched@example.com");
+    AppUser doctorUser = newUser("en", Role.ROLE_DOCTOR);
+
+    Instant start = Instant.now().plus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MINUTES);
+    UUID[] ids = new UUID[4];
+    tx.executeWithoutResult(
+        s -> {
+          Hospital h = new Hospital();
+          h.setName("T10 Hospital");
+          h.setActive(true);
+          h = hospitals.save(h);
+
+          Department d = new Department();
+          d.setHospitalId(h.getId());
+          d.setName("OPD");
+          d = departments.save(d);
+
+          Practitioner pr = new Practitioner();
+          pr.setUserId(doctorUser.getId());
+          pr.setName("Dr Schedule");
+          pr = practitioners.save(pr);
+
+          PractitionerRoleEntity role = new PractitionerRoleEntity();
+          role.setPractitionerId(pr.getId());
+          role.setHospitalId(h.getId());
+          role.setDepartmentId(d.getId());
+          role.setActive(true);
+          role = roles.save(role);
+
+          Slot slot = new Slot();
+          slot.setPractitionerRoleId(role.getId());
+          slot.setStartsAt(start);
+          slot.setEndsAt(start.plus(30, ChronoUnit.MINUTES));
+          slot.setCapacity(1);
+          slot.setBookedCount(1);
+          slot = slots.save(slot);
+
+          Appointment appt = new Appointment();
+          appt.setPatientId(patient.getId());
+          appt.setDoctorId(pr.getId());
+          appt.setHospitalId(h.getId());
+          appt.setSlotId(slot.getId());
+          appt.setStatus(AppointmentStatus.BOOKED);
+          appt.setPriorityLevel(TriageLevel.NORMAL);
+          appt.setBookedAt(Instant.now());
+          appt = appointments.save(appt);
+
+          ids[0] = role.getId();
+          ids[1] = pr.getId();
+          ids[2] = h.getId();
+          ids[3] = slot.getId();
+        });
+
+    publish(
+        new DomainEvents.PractitionerScheduleChanged(
+            ids[0], ids[1], ids[2], List.of(ids[3]), Instant.now()));
+
+    List<Notification> sent = forPatient(patient.getId());
+    assertThat(sent).isNotEmpty();
+    assertThat(sent)
+        .anySatisfy(
+            n -> {
+              assertThat(meta(n).getEventType()).isEqualTo(NotificationEventType.SCHEDULE_CHANGED);
+              assertThat(n.getRecipientUserId()).isEqualTo(patientUser.getId());
+            });
   }
 
   private List<StaffCallEntry> openCallsFor(UUID patientId) {

@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* Optional ADMIN home tile — V2-01 may th:replace when present. */-->
+<section th:fragment="admin-staff-tile" class="mf-tile">
+  <h3 class="mf-tile-title" th:text="#{identity.staff.tile.title}">Staff users</h3>
+  <p class="mf-tile-meta" th:text="#{identity.staff.tile.body}">Create accounts, assign roles, unlock and reset MFA.</p>
+  <a class="btn btn-sm btn-teal" th:href="@{/identity/staff}" th:text="#{identity.staff.tile.cta}">Manage staff</a>
+</section>
+</body>
+</html>

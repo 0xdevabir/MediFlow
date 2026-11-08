@@ -20,6 +20,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Username/password authentication with account lock-out (5 failures → 15 min) and transparent
  * hash upgrade to the identity default algorithm. Being the only {@code AuthenticationProvider}
  * bean, Spring Security uses it for the global {@code AuthenticationManager} (form login).
+ * V2-02 keeps this as the explicit security collaborator: no parallel {@code DaoAuthenticationProvider}
+ * is registered; T00 {@code SecurityConfig} relies on component-scanned providers.
  *
  * <p>The locked check runs before the password check, so a locked account gives no signal about
  * whether the password was right. The login page shows the same generic error for both.

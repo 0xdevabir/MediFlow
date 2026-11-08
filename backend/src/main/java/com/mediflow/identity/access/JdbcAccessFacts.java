@@ -102,6 +102,17 @@ public class JdbcAccessFacts implements AccessFacts {
   }
 
   @Override
+  public boolean erAssignedOnActiveAlert(UUID erUserId, UUID patientId) {
+    return exists(
+        """
+        SELECT 1 FROM red_alert
+         WHERE patient_id = :p AND handover_status IS NULL
+           AND (assigned_er_user_id = :u OR assigned_er_user_id IS NULL)
+        """,
+        new MapSqlParameterSource("p", patientId).addValue("u", erUserId));
+  }
+
+  @Override
   public boolean openLabOrderForPatient(UUID patientId, Instant now) {
     return exists(
         """

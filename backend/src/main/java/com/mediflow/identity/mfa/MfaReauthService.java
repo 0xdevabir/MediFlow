@@ -27,17 +27,25 @@ public class MfaReauthService {
   }
 
   public void requireFreshMfa() {
-    if (!isFresh()) {
+    requireFreshMfa(MfaSession.FRESH_WINDOW);
+  }
+
+  public void requireFreshMfa(java.time.Duration maxAge) {
+    if (!isFresh(maxAge)) {
       throw new MfaStepUpRequiredException();
     }
   }
 
   public boolean isFresh() {
+    return isFresh(MfaSession.FRESH_WINDOW);
+  }
+
+  public boolean isFresh(java.time.Duration maxAge) {
     Optional<HttpSession> session = currentSession();
     String username = currentUsername();
     return session.isPresent()
         && username != null
-        && MfaSession.isFresh(session.get(), username, clock.now());
+        && MfaSession.isFresh(session.get(), username, clock.now(), maxAge);
   }
 
   public Optional<Instant> lastVerifiedAt() {

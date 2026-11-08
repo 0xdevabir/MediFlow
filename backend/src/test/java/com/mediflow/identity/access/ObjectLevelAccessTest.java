@@ -131,12 +131,15 @@ class ObjectLevelAccessTest {
   }
 
   @Test
-  void erNeedsActiveRedAlert() {
+  void erNeedsAssigneeOnActiveRedAlert() {
     signIn(Role.ROLE_ER);
     assertThat(policy.can("VITALS", "R", patient)).isFalse();
-    when(facts.activeRedAlert(patient)).thenReturn(true);
+    when(facts.erAssignedOnActiveAlert(user, patient)).thenReturn(true);
     assertThat(policy.can("VITALS", "R", patient)).isTrue();
     assertThat(policy.can("VITALS", "R", UUID.randomUUID())).isFalse();
+    // Another ER who is not the assignee (and alert is assigned) is denied
+    when(facts.erAssignedOnActiveAlert(user, patient)).thenReturn(false);
+    assertThat(policy.can("VITALS", "R", patient)).isFalse();
   }
 
   @Test
@@ -157,8 +160,25 @@ class ObjectLevelAccessTest {
     when(facts.userIdOfPractitioner(er)).thenReturn(Optional.empty());
     when(facts.userHasRole(er, Role.ROLE_ER)).thenReturn(true);
     assertThat(port.isAssigned(er, patient)).isFalse();
-    when(facts.activeRedAlert(patient)).thenReturn(true);
+    when(facts.erAssignedOnActiveAlert(er, patient)).thenReturn(true);
     assertThat(port.isAssigned(er, patient)).isTrue();
     assertThat(port.isErAssigned(er, patient)).isTrue();
+    when(facts.erAssignedOnActiveAlert(er, patient)).thenReturn(false);
+    assertThat(port.isErAssigned(er, patient)).isFalse();
+    when(facts.activeBreakGlass(er, patient, NOW)).thenReturn(true);
+    assertThat(port.isErAssigned(er, patient)).isTrue();
+  }
+
+  @Test
+  void resourceHelpersMatchMatrixCells() {
+    signIn(Role.ROLE_ADMIN);
+    assertThat(policy.canManageUsers()).isTrue();
+    assertThat(policy.canReadAudit(null)).isTrue();
+    signIn(Role.ROLE_NURSE);
+    assertThat(policy.canManageUsers()).isFalse();
+    when(facts.erAssignedOnActiveAlert(user, patient)).thenReturn(true);
+    signIn(Role.ROLE_ER);
+    assertThat(policy.canReadVitals(patient)).isTrue();
+    assertThat(policy.isErAssigned(patient)).isTrue();
   }
 }

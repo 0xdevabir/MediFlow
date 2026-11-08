@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('identity.staff.list.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mf-panel-wide mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <header class="mb-4 d-flex flex-wrap align-items-start justify-content-between gap-3">
+    <div>
+      <h1 class="mf-page-title" th:text="#{identity.staff.list.title}">Staff users</h1>
+      <p class="mf-page-subtitle mb-0" th:text="#{identity.staff.list.lead}">Create accounts, assign roles, unlock and reset MFA.</p>
+    </div>
+    <a class="btn btn-teal" th:href="@{/identity/staff/new}" th:text="#{identity.staff.create}">New staff user</a>
+  </header>
+
+  <div th:if="${rows.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty('identity.staff.empty.title', 'identity.staff.empty.body')}"></div>
+
+  <div class="table-responsive" th:unless="${rows.isEmpty()}">
+    <table class="table mf-data-table mf-table-stack align-middle mb-0 bg-white">
+      <thead>
+      <tr>
+        <th th:text="#{identity.staff.col.username}">Username</th>
+        <th th:text="#{identity.staff.col.displayName}">Name</th>
+        <th th:text="#{identity.staff.col.roles}">Roles</th>
+        <th th:text="#{identity.staff.col.status}">Status</th>
+        <th th:text="#{identity.staff.col.practitioner}">Practitioner</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="row : ${rows}">
+        <td data-label="Username" th:attr="data-label=#{identity.staff.col.username}" th:text="${row.user().username}">user</td>
+        <td th:attr="data-label=#{identity.staff.col.displayName}" th:text="${row.user().displayName}">Name</td>
+        <td th:attr="data-label=#{identity.staff.col.roles}">
+          <span class="mf-badge mf-badge-normal me-1" th:each="r : ${row.user().roles}"
+                th:text="${#strings.substringAfter(r.name(), 'ROLE_')}">ROLE</span>
+        </td>
+        <td th:attr="data-label=#{identity.staff.col.status}">
+          <span th:if="${!row.user().enabled}" class="mf-badge mf-badge-urgent" th:text="#{identity.staff.status.disabled}">Disabled</span>
+          <span th:if="${row.user().enabled and row.locked()}" class="mf-badge mf-badge-critical" th:text="#{identity.staff.status.locked}">Locked</span>
+          <span th:if="${row.user().enabled and !row.locked()}" class="mf-badge mf-badge-success" th:text="#{identity.staff.status.active}">Active</span>
+          <span th:if="${row.user().mfaEnabled}" class="mf-badge mf-badge-ai ms-1" th:text="#{identity.staff.status.mfa}">MFA</span>
+        </td>
+        <td th:attr="data-label=#{identity.staff.col.practitioner}"
+            th:text="${row.practitionerName().orElse('—')}">—</td>
+        <td>
+          <a class="btn btn-sm btn-outline-secondary"
+             th:href="@{/identity/staff/{id}(id=${row.user().id})}"
+             th:text="#{identity.staff.manage}">Manage</a>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

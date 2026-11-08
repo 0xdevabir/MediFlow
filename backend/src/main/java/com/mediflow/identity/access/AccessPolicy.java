@@ -138,6 +138,61 @@ public class AccessPolicy {
         && !currentRoles().contains(Role.ROLE_PATIENT);
   }
 
+  /** ER assignee (or unassigned pool / break-glass) for the current user. */
+  public boolean isErAssigned(UUID patientId) {
+    return can(AccessResource.CONSULTATION_NOTES, AccessAction.R, patientId)
+        && currentRoles().contains(Role.ROLE_ER);
+  }
+
+  public boolean canReadVitals(UUID patientId) {
+    return can(AccessResource.VITALS, AccessAction.R, patientId);
+  }
+
+  public boolean canWriteVitals(UUID patientId) {
+    return can(AccessResource.VITALS, AccessAction.C, patientId)
+        || can(AccessResource.VITALS, AccessAction.U, patientId);
+  }
+
+  public boolean canReadHistory(UUID patientId) {
+    return can(AccessResource.HISTORY_ALLERGIES, AccessAction.R, patientId);
+  }
+
+  public boolean canWriteHistory(UUID patientId) {
+    return can(AccessResource.HISTORY_ALLERGIES, AccessAction.C, patientId)
+        || can(AccessResource.HISTORY_ALLERGIES, AccessAction.U, patientId);
+  }
+
+  public boolean canReadConsultation(UUID patientId) {
+    return can(AccessResource.CONSULTATION_NOTES, AccessAction.R, patientId);
+  }
+
+  public boolean canWriteConsultation(UUID patientId) {
+    return can(AccessResource.CONSULTATION_NOTES, AccessAction.C, patientId)
+        || can(AccessResource.CONSULTATION_NOTES, AccessAction.U, patientId);
+  }
+
+  public boolean canSignPrescription(UUID patientId) {
+    return can(AccessResource.SIGNED_PRESCRIPTION, AccessAction.S, patientId);
+  }
+
+  public boolean canDispense(UUID patientId) {
+    return can(AccessResource.SIGNED_PRESCRIPTION, AccessAction.D, patientId)
+        || can(AccessResource.DISPENSING, AccessAction.C, patientId);
+  }
+
+  public boolean canVerifyLabReport(UUID patientId) {
+    return can(AccessResource.LAB_REPORTS, AccessAction.V, patientId);
+  }
+
+  public boolean canReadAudit(UUID patientId) {
+    return can(AccessResource.AUDIT_LOG, AccessAction.R, patientId);
+  }
+
+  public boolean canManageUsers() {
+    return can(AccessResource.SETTINGS_USERS, AccessAction.C, null)
+        || can(AccessResource.SETTINGS_USERS, AccessAction.U, null);
+  }
+
   // ---------------------------------------------------------------- core
 
   private boolean evaluate(
@@ -197,8 +252,12 @@ public class AccessPolicy {
                           || facts.activeBreakGlass(uid, patientId, now))
               .orElse(false);
       case ER_ASSIGNED ->
-          facts.activeRedAlert(patientId)
-              || ctx.userId().map(uid -> facts.activeBreakGlass(uid, patientId, now)).orElse(false);
+          ctx.userId()
+              .map(
+                  uid ->
+                      facts.erAssignedOnActiveAlert(uid, patientId)
+                          || facts.activeBreakGlass(uid, patientId, now))
+              .orElse(false);
       // Object-level checks (one order / one prescription) use only that object's link, so a lab
       // tech cannot read a cancelled order just because the patient has another open one.
       case LINKED_LAB_ORDER ->

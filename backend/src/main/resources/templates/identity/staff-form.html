@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${mode == 'create'} ? 'identity.staff.create.title' : 'identity.staff.edit.title')}"></head>
+<body class="bg-light">
+<div th:replace="~{layout/base :: nav}"></div>
+<main class="container mf-panel-narrow mb-5">
+  <div th:replace="~{layout/base :: flash}"></div>
+  <p class="mb-3"><a th:href="@{/identity/staff}" th:text="#{identity.staff.back}">← Staff list</a></p>
+
+  <header class="mb-4">
+    <h1 class="mf-page-title"
+        th:text="${mode == 'create'} ? #{identity.staff.create.title} : #{identity.staff.edit.title}">Staff</h1>
+    <p class="mf-page-subtitle mb-0" th:text="#{identity.staff.form.lead}">Provision clinical and ops accounts.</p>
+  </header>
+
+  <!-- Create -->
+  <form th:if="${mode == 'create'}" th:action="@{/identity/staff}" method="post" class="vstack gap-3">
+    <div>
+      <label class="form-label" for="username" th:text="#{identity.staff.field.username}">Username</label>
+      <input class="form-control" id="username" name="username" required maxlength="100" autocomplete="off"/>
+    </div>
+    <div>
+      <label class="form-label" for="displayName" th:text="#{identity.staff.field.displayName}">Display name</label>
+      <input class="form-control" id="displayName" name="displayName" required maxlength="200"/>
+    </div>
+    <div>
+      <label class="form-label" for="initialPassword" th:text="#{identity.staff.field.password}">Initial password</label>
+      <input class="form-control" id="initialPassword" name="initialPassword" type="password" required autocomplete="new-password"/>
+      <div class="form-text" th:text="#{identity.staff.field.password.hint}">At least 12 characters, mixed classes.</div>
+    </div>
+    <div>
+      <label class="form-label" for="email" th:text="#{identity.staff.field.email}">Email</label>
+      <input class="form-control" id="email" name="email" type="email" maxlength="200"/>
+    </div>
+    <div>
+      <label class="form-label" for="phone" th:text="#{identity.staff.field.phone}">Phone</label>
+      <input class="form-control" id="phone" name="phone" maxlength="40"/>
+    </div>
+    <div>
+      <label class="form-label" for="locale" th:text="#{identity.staff.field.locale}">Locale</label>
+      <select class="form-select" id="locale" name="locale">
+        <option value="en">English</option>
+        <option value="bn">বাংলা</option>
+      </select>
+    </div>
+    <fieldset>
+      <legend class="form-label" th:text="#{identity.staff.field.roles}">Roles</legend>
+      <div class="d-flex flex-wrap gap-3">
+        <div class="form-check" th:each="r : ${staffRoles}">
+          <input class="form-check-input" type="checkbox" name="roles" th:value="${r.name()}" th:id="'role-' + ${r.name()}"/>
+          <label class="form-check-label" th:for="'role-' + ${r.name()}" th:text="${#strings.substringAfter(r.name(), 'ROLE_')}">ROLE</label>
+        </div>
+      </div>
+    </fieldset>
+    <button class="btn btn-teal" type="submit" th:text="#{identity.staff.create.submit}">Create user</button>
+  </form>
+
+  <!-- Edit -->
+  <div th:if="${mode == 'edit'}" class="vstack gap-4">
+    <section class="mf-tile">
+      <h2 class="mf-tile-title" th:text="${user.displayName}">Name</h2>
+      <p class="mf-tile-meta mb-2">
+        <span th:text="${user.username}">user</span>
+        ·
+        <span th:if="${!user.enabled}" class="mf-badge mf-badge-urgent" th:text="#{identity.staff.status.disabled}">Disabled</span>
+        <span th:if="${user.enabled and locked}" class="mf-badge mf-badge-critical" th:text="#{identity.staff.status.locked}">Locked</span>
+        <span th:if="${user.enabled and !locked}" class="mf-badge mf-badge-success" th:text="#{identity.staff.status.active}">Active</span>
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <form th:if="${!user.enabled}" th:action="@{/identity/staff/{id}/enable(id=${user.id})}" method="post">
+          <button class="btn btn-sm btn-teal" type="submit" th:text="#{identity.staff.action.enable}">Enable</button>
+        </form>
+        <form th:if="${user.enabled}" th:action="@{/identity/staff/{id}/disable(id=${user.id})}" method="post">
+          <button class="btn btn-sm btn-outline-danger" type="submit" th:text="#{identity.staff.action.disable}">Disable</button>
+        </form>
+        <form th:if="${locked}" th:action="@{/identity/staff/{id}/unlock(id=${user.id})}" method="post">
+          <button class="btn btn-sm btn-outline-secondary" type="submit" th:text="#{identity.staff.action.unlock}">Unlock</button>
+        </form>
+        <form th:action="@{/identity/staff/{id}/reset-mfa(id=${user.id})}" method="post"
+              onsubmit="return confirm(this.getAttribute('data-confirm'));"
+              th:attr="data-confirm=#{identity.staff.action.resetMfa.confirm}">
+          <button class="btn btn-sm btn-outline-secondary" type="submit" th:text="#{identity.staff.action.resetMfa}">Reset MFA</button>
+        </form>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="h5 mb-3" th:text="#{identity.staff.field.roles}">Roles</h2>
+      <form th:action="@{/identity/staff/{id}/roles(id=${user.id})}" method="post" class="vstack gap-3">
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check" th:each="r : ${staffRoles}">
+            <input class="form-check-input" type="checkbox" name="roles" th:value="${r.name()}"
+                   th:id="'edit-role-' + ${r.name()}"
+                   th:checked="${user.roles.contains(r)}"/>
+            <label class="form-check-label" th:for="'edit-role-' + ${r.name()}"
+                   th:text="${#strings.substringAfter(r.name(), 'ROLE_')}">ROLE</label>
+          </div>
+        </div>
+        <button class="btn btn-teal align-self-start" type="submit" th:text="#{identity.staff.roles.save}">Save roles</button>
+      </form>
+    </section>
+
+    <section>
+      <h2 class="h5 mb-3" th:text="#{identity.staff.practitioner.title}">Practitioner link</h2>
+      <p th:if="${practitioner != null}" class="text-muted">
+        <span th:text="#{identity.staff.practitioner.current}">Linked:</span>
+        <strong th:text="${practitioner.name}">Dr</strong>
+        <span class="small text-muted" th:if="${practitioner.licenceNo != null}"
+              th:text="' · ' + ${practitioner.licenceNo}"></span>
+      </p>
+      <form th:action="@{/identity/staff/{id}/practitioner(id=${user.id})}" method="post" class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label" for="pname" th:text="#{identity.staff.practitioner.name}">Name</label>
+          <input class="form-control" id="pname" name="name" th:placeholder="${user.displayName}"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="prole" th:text="#{identity.staff.practitioner.roleLabel}">Role label</label>
+          <input class="form-control" id="prole" name="roleLabel" placeholder="Doctor"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="plic" th:text="#{identity.staff.practitioner.licence}">Licence</label>
+          <input class="form-control" id="plic" name="licenceNo"/>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary w-100" type="submit" th:text="#{identity.staff.practitioner.create}">Create</button>
+        </div>
+      </form>
+      <form th:action="@{/identity/staff/{id}/practitioner/link(id=${user.id})}" method="post" class="row g-2 align-items-end mt-3">
+        <div class="col-md-8">
+          <label class="form-label" for="practitionerId" th:text="#{identity.staff.practitioner.linkId}">Existing practitioner id</label>
+          <input class="form-control" id="practitionerId" name="practitionerId" required
+                 pattern="[0-9a-fA-F-]{36}" placeholder="UUID"/>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-outline-secondary w-100" type="submit" th:text="#{identity.staff.practitioner.link}">Link</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+<th:block th:replace="~{layout/base :: scripts}"></th:block>
+</body>
+</html>

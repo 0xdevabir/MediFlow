@@ -36,6 +36,13 @@ public interface AccessFacts {
   /** A Red Alert for the patient that has not been handed over / closed yet. */
   boolean activeRedAlert(UUID patientId);
 
+  /**
+   * Active Red Alert for {@code patientId} where {@code erUserId} is the assignee, or the alert's
+   * {@code assigned_er_user_id} is null (hospital ER pool for unassigned alerts). R&D §12 wants
+   * assignee-scoped ER access; null assignee is the documented fallback until every raise sets one.
+   */
+  boolean erAssignedOnActiveAlert(UUID erUserId, UUID patientId);
+
   /** Patient has a lab order the lab is still handling (minimum-necessary link for lab techs). */
   boolean openLabOrderForPatient(UUID patientId, Instant now);
 

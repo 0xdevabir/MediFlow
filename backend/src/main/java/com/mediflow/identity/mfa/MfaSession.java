@@ -42,8 +42,13 @@ public final class MfaSession {
   }
 
   public static boolean isFresh(HttpSession session, String username, Instant now) {
+    return isFresh(session, username, now, FRESH_WINDOW);
+  }
+
+  public static boolean isFresh(HttpSession session, String username, Instant now, Duration maxAge) {
+    Duration window = maxAge == null ? FRESH_WINDOW : maxAge;
     return verifiedAt(session, username)
-        .map(at -> !at.isAfter(now) && Duration.between(at, now).compareTo(FRESH_WINDOW) <= 0)
+        .map(at -> !at.isAfter(now) && Duration.between(at, now).compareTo(window) <= 0)
         .orElse(false);
   }
 }

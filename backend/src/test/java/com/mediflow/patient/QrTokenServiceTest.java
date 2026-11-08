@@ -52,6 +52,16 @@ class QrTokenServiceTest {
     assertThat(PatientKeys.QR_TOKEN).isNotBlank();
   }
 
+
+  @Test
+  void customTtlHonoured() {
+    UUID id = UUID.randomUUID();
+    var issued = service.issue(id, "MF-2026-000004", Duration.ofMinutes(5));
+    assertThat(service.verify(issued.token())).isPresent();
+    now.set(now.get().plus(Duration.ofMinutes(6)));
+    assertThat(service.verify(issued.token())).isEmpty();
+  }
+
   @Test
   void qrDataUriIsPng() {
     assertThat(service.qrDataUri("MF-2026-000001")).startsWith("data:image/png;base64,");

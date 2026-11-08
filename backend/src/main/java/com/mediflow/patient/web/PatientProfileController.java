@@ -7,13 +7,18 @@ import com.mediflow.patient.service.ContactVerificationService;
 import com.mediflow.patient.service.OtpIssuer;
 import com.mediflow.patient.service.PatientAccessGuard;
 import com.mediflow.patient.service.PatientClinicalHistoryService;
+import com.mediflow.patient.service.PatientDashboardService;
 import com.mediflow.patient.service.PatientDocumentService;
 import com.mediflow.patient.service.PatientProfileService;
 import com.mediflow.patient.service.PatientView;
 import com.mediflow.patient.service.QrTokenService;
+import com.mediflow.shared.port.AdherenceQueryPort;
+import com.mediflow.shared.web.CurrentUser;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -38,6 +43,9 @@ public class PatientProfileController {
   private final ContactVerificationService contacts;
   private final PatientAccessGuard access;
   private final QrTokenService qrTokens;
+  private final PatientDashboardService dashboard;
+  private final ObjectProvider<AdherenceQueryPort> adherence;
+  private final CurrentUser currentUser;
 
   public PatientProfileController(
       PatientProfileService profiles,
@@ -45,13 +53,31 @@ public class PatientProfileController {
       PatientDocumentService documents,
       ContactVerificationService contacts,
       PatientAccessGuard access,
-      QrTokenService qrTokens) {
+      QrTokenService qrTokens,
+      PatientDashboardService dashboard,
+      ObjectProvider<AdherenceQueryPort> adherence,
+      CurrentUser currentUser) {
     this.profiles = profiles;
     this.clinical = clinical;
     this.documents = documents;
     this.contacts = contacts;
     this.access = access;
     this.qrTokens = qrTokens;
+    this.dashboard = dashboard;
+    this.adherence = adherence;
+    this.currentUser = currentUser;
+  }
+
+  /** Role landing: patient → dashboard; front desk / nurse → search. */
+  @GetMapping({"", "/"})
+  public String landing() {
+    if (currentUser.hasRole("PATIENT")) {
+      return "redirect:/patients/me/dashboard";
+    }
+    if (currentUser.hasRole("FRONT_DESK") || currentUser.hasRole("NURSE")) {
+      return "redirect:/patients/search";
+    }
+    return "redirect:/";
   }
 
   @GetMapping("/me")
@@ -61,7 +87,32 @@ public class PatientProfileController {
             .ownPatientId()
             .orElseThrow(
                 () -> new org.springframework.security.access.AccessDeniedException("not a patient"));
-    return "redirect:/patients/" + id;
+    return "redirect:/patients/me/dashboard";
+  }
+
+  @GetMapping("/me/dashboard")
+  public String myDashboard(Model model) {
+    UUID id =
+        access
+            .ownPatientId()
+            .orElseThrow(
+                () -> new org.springframework.security.access.AccessDeniedException("not a patient"));
+    return dashboard(id, model);
+  }
+
+  @GetMapping("/{patientId}/dashboard")
+  public String dashboard(@PathVariable UUID patientId, Model model) {
+    PatientDashboardService.DashboardView view = dashboard.load(patientId);
+    model.addAttribute("pageTitleKey", "patient.dashboard.title");
+    model.addAttribute("patient", view.patient());
+    model.addAttribute("pct", view.pct());
+    model.addAttribute("adherencePercent", view.pct());
+    model.addAttribute("adherenceConfigured", view.adherenceConfigured());
+    model.addAttribute("nextVisit", view.nextVisit());
+    model.addAttribute("qrDataUri", view.qrDataUri());
+    model.addAttribute("qrExpiresAt", view.qrExpiresAt());
+    model.addAttribute("isSelf", access.isSelf(patientId));
+    return "patient/dashboard";
   }
 
   @GetMapping("/search")
@@ -93,6 +144,18 @@ public class PatientProfileController {
     QrTokenService.IssuedToken token = profiles.issueCardToken(patientId);
     model.addAttribute("qrDataUri", qrTokens.qrDataUri(token.token()));
     model.addAttribute("qrExpiresAt", token.expiresAt());
+    if (access.isSelf(patientId)) {
+      AdherenceQueryPort port = adherence.getIfAvailable();
+      Optional<Integer> pct =
+          port == null ? Optional.empty() : port.adherencePercent(patientId);
+      model.addAttribute("pct", pct.orElse(null));
+      model.addAttribute("adherencePercent", pct.orElse(null));
+      model.addAttribute("adherenceConfigured", port != null);
+    } else {
+      model.addAttribute("pct", null);
+      model.addAttribute("adherencePercent", null);
+      model.addAttribute("adherenceConfigured", false);
+    }
     return "patient/profile";
   }
 

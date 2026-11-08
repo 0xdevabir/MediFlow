@@ -46,11 +46,22 @@ public class QrTokenService {
   public record IssuedToken(String token, Instant expiresAt) {}
 
   public IssuedToken issue(UUID patientId, String mrn) {
-    Instant exp = clock.now().plus(ttl);
+    return issue(patientId, mrn, ttl);
+  }
+
+  /** Issues a token that expires after {@code tokenTtl} (falls back to configured default). */
+  public IssuedToken issue(UUID patientId, String mrn, Duration tokenTtl) {
+    Duration effective = tokenTtl == null || tokenTtl.isZero() || tokenTtl.isNegative() ? ttl : tokenTtl;
+    Instant exp = clock.now().plus(effective);
     String payload = "v1|" + patientId + "|" + mrn + "|" + exp.getEpochSecond();
     byte[] p = payload.getBytes(StandardCharsets.UTF_8);
     String token = ENC.encodeToString(p) + "." + ENC.encodeToString(PatientKeys.hmac(PatientKeys.QR_TOKEN, p));
     return new IssuedToken(token, exp);
+  }
+
+  /** Configured default TTL ({@code mediflow.patient.qr-token-ttl}). */
+  public Duration defaultTtl() {
+    return ttl;
   }
 
   /** Empty when malformed, tampered or expired. */

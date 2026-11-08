@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
+import com.mediflow.fhir.FhirSystems;
 import com.mediflow.fhir.validate.R4ResourceValidator;
 import com.mediflow.shared.domain.Allergy;
 import com.mediflow.shared.domain.Appointment;
@@ -49,7 +50,7 @@ class FhirResourceMapperTest {
 
   @BeforeEach
   void setUp() {
-    mapper = new FhirResourceMapper();
+    mapper = new FhirResourceMapper(new FhirSystems("http://localhost/fhir/r4"));
     FhirContext ctx = FhirContext.forR4Cached();
     parser = ctx.newJsonParser();
     validator = new R4ResourceValidator(ctx, parser);
@@ -276,4 +277,31 @@ class FhirResourceMapperTest {
     List<String> errors = validator.validate(resource);
     assertEquals(List.of(), errors, () -> "validator errors for " + resource.getResourceType());
   }
+
+  @Test
+  void mediflowSystemUrlsFollowConfiguredBaseUrl() {
+    FhirResourceMapper custom =
+        new FhirResourceMapper(new FhirSystems("https://clinic.example/fhir/r4"));
+    Patient p = new Patient();
+    p.setId(UUID.randomUUID());
+    p.setMrn("MRN-9");
+    p.setNationalId("NID-9");
+    p.setGivenName("A");
+    p.setFamilyName("B");
+    p.setDateOfBirth(LocalDate.of(1990, 1, 1));
+    p.setSex("F");
+    var out = custom.patient(p);
+    assertEquals("https://clinic.example/fhir/sid/mrn", out.getIdentifierFirstRep().getSystem());
+    assertEquals(
+        "https://clinic.example/fhir/sid/national-id", out.getIdentifier().get(1).getSystem());
+
+    Practitioner pr = new Practitioner();
+    pr.setId(UUID.randomUUID());
+    pr.setName("Dr X");
+    pr.setLicenceNo("L-1");
+    assertEquals(
+        "https://clinic.example/fhir/sid/practitioner-licence",
+        custom.practitioner(pr).getIdentifierFirstRep().getSystem());
+  }
+
 }

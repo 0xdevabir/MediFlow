@@ -68,15 +68,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class FhirResourceMapper {
 
+  private final FhirSystems systems;
+
+  public FhirResourceMapper(FhirSystems systems) {
+    this.systems = systems;
+  }
+
   public org.hl7.fhir.r4.model.Patient patient(Patient p) {
     org.hl7.fhir.r4.model.Patient out = new org.hl7.fhir.r4.model.Patient();
     out.setId(FhirIds.id(p.getId()));
     if (p.getMrn() != null) {
-      out.addIdentifier(new Identifier().setSystem(FhirSystems.MRN).setValue(p.getMrn()));
+      out.addIdentifier(new Identifier().setSystem(systems.mrn()).setValue(p.getMrn()));
     }
     if (p.getNationalId() != null) {
       out.addIdentifier(
-          new Identifier().setSystem(FhirSystems.NATIONAL_ID).setValue(p.getNationalId()));
+          new Identifier().setSystem(systems.nationalId()).setValue(p.getNationalId()));
     }
     HumanName name = out.addName();
     name.setFamily(p.getFamilyName());
@@ -159,7 +165,7 @@ public class FhirResourceMapper {
     out.setId(FhirIds.id(p.getId()));
     out.setActive(true);
     if (p.getLicenceNo() != null) {
-      out.addIdentifier(new Identifier().setSystem(FhirSystems.LICENCE).setValue(p.getLicenceNo()));
+      out.addIdentifier(new Identifier().setSystem(systems.licence()).setValue(p.getLicenceNo()));
     }
     HumanName name = out.addName();
     name.setText(p.getName());
@@ -288,7 +294,7 @@ public class FhirResourceMapper {
     }
     flag.setCode(
         MapperSupport.coding(
-            "https://mediflow.local/fhir/CodeSystem/red-alert",
+            systems.redAlert(),
             alert.getLevel() == null ? "ALERT" : alert.getLevel().name(),
             alert.getReason() == null ? "Red Alert" : alert.getReason()));
     Period period = new Period().setStart(MapperSupport.date(alert.getRaisedAt()));
@@ -429,13 +435,13 @@ public class FhirResourceMapper {
       if (med.getText() == null) {
         med.setText(brand.getName());
       }
-      Extension dgda = MapperSupport.dgdaBrand(brand.getDgdaRegNo());
+      Extension dgda = MapperSupport.dgdaBrand(systems.dgdaBrand(), brand.getDgdaRegNo());
       if (dgda != null) {
         mr.addExtension(dgda);
       }
       mr.addExtension(
           new Extension(
-              "https://mediflow.local/fhir/StructureDefinition/dgda-brand-name",
+              systems.dgdaBrandName(),
               new StringType(brand.getName())));
     }
     mr.setMedication(med);

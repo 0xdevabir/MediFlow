@@ -48,7 +48,7 @@ class Settings:
     # Dictionary (brand -> generic -> ATC)
     dictionary_url: str | None = None  # e.g. http://backend:8080/api/internal/dictionary/export
     dictionary_token: str | None = None
-    dictionary_token_header: str = "X-Internal-Token"
+    dictionary_token_header: str = "X-Mediflow-Internal-Key"
     dictionary_file: str | None = None  # local JSON or CSV export
     dictionary_refresh_s: int = 3600
     allow_illustrative_dictionary: bool = True
@@ -78,7 +78,7 @@ class Settings:
             max_image_bytes=_int("MEDIFLOW_AI_MAX_IMAGE_BYTES", 15 * 1024 * 1024),
             dictionary_url=_env("MEDIFLOW_AI_DICTIONARY_URL"),
             dictionary_token=_env("MEDIFLOW_AI_DICTIONARY_TOKEN"),
-            dictionary_token_header=_env("MEDIFLOW_AI_DICTIONARY_TOKEN_HEADER", "X-Internal-Token"),
+            dictionary_token_header=_env("MEDIFLOW_AI_DICTIONARY_TOKEN_HEADER", "X-Mediflow-Internal-Key"),
             dictionary_file=_env("MEDIFLOW_AI_DICTIONARY_FILE"),
             dictionary_refresh_s=_int("MEDIFLOW_AI_DICTIONARY_REFRESH_S", 3600),
             allow_illustrative_dictionary=_bool("MEDIFLOW_AI_ALLOW_ILLUSTRATIVE_DICTIONARY", True),

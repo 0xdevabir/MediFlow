@@ -14,6 +14,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class CapabilityStatementFactory {
 
+  private final FhirSystems systems;
+
+  public CapabilityStatementFactory(FhirSystems systems) {
+    this.systems = systems;
+  }
+
   private static final List<String> RESOURCES =
       List.of(
           "Patient",
@@ -54,7 +60,7 @@ public class CapabilityStatementFactory {
     cs.setImplementation(
         new CapabilityStatement.CapabilityStatementImplementationComponent()
             .setDescription("Read-only HL7 FHIR R4 facade")
-            .setUrl(FhirSystems.FHIR_BASE));
+            .setUrl(systems.fhirBase()));
 
     CapabilityStatementRestComponent rest = cs.addRest();
     rest.setMode(RestfulCapabilityMode.SERVER);

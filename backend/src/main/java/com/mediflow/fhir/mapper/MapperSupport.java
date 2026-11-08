@@ -52,12 +52,12 @@ final class MapperSupport {
     return q;
   }
 
-  static Extension dgdaBrand(String regNo) {
+  static Extension dgdaBrand(String extensionUrl, String regNo) {
     if (regNo == null || regNo.isBlank()) {
       return null;
     }
     Extension ext = new Extension();
-    ext.setUrl(FhirSystems.DGDA_BRAND);
+    ext.setUrl(extensionUrl);
     ext.setValue(new StringType(regNo));
     return ext;
   }

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
-<body>
-<nav th:replace="~{layout/base :: nav}"></nav>
-<main class="container pb-5">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
+<div th:replace="~{layout/base :: nav}"></div>
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <p><a th:href="@{/pharmacy}">&larr; Pharmacy</a></p>
-  <h1 class="h3" th:text="${lowOnly} ? #{pharmacy.stock.lowTitle} : #{pharmacy.stock.title}">Stock</h1>
-
-  <table class="table table-sm table-striped">
+  <p class="mb-2"><a th:href="@{/pharmacy}">&larr; <span th:text="#{pharmacy.home.title}">Pharmacy</span></a></p>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey=${pageTitleKey}, subtitleKey='pharmacy.stock.lead')}"></div>
+<table class="table table-sm mf-table">
     <thead><tr><th>Brand</th><th>Generic</th><th>Qty</th><th>Reorder</th><th>Brand ID</th></tr></thead>
     <tbody>
     <tr th:each="r : ${rows}" th:classappend="${r.low()} ? 'table-warning'">
@@ -45,7 +45,7 @@
       <input class="form-control" type="number" min="0" name="reorderLevel" value="10"/>
     </div>
     <div class="col-md-2 d-flex align-items-end">
-      <button class="btn btn-primary w-100" type="submit" th:text="#{pharmacy.stock.addBatch}">Save</button>
+      <button class="btn btn-teal w-100" type="submit" th:text="#{pharmacy.stock.addBatch}">Save</button>
     </div>
   </form>
 </main>

@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
-<body>
-<nav th:replace="~{layout/base :: nav}"></nav>
-<main class="container pb-5">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
+<div th:replace="~{layout/base :: nav}"></div>
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{pharmacy.home.title}">Pharmacy</h1>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='pharmacy.home.title', subtitleKey='pharmacy.home.lead')}"></div>
+
   <div class="mb-3 d-flex flex-wrap gap-2">
     <a class="btn btn-outline-secondary btn-sm" th:href="@{/pharmacy/stock}" th:text="#{pharmacy.nav.stock}">Stock</a>
     <a class="btn btn-outline-secondary btn-sm" th:href="@{/pharmacy/stock/low}" th:text="#{pharmacy.home.lowStock}">Low stock</a>
@@ -15,33 +18,46 @@
        th:href="@{/pharmacy/substitutions}" th:text="#{pharmacy.nav.substitutions}">Substitutions</a>
   </div>
 
-  <section sec:authorize="hasAnyRole('PHARMACIST','ADMIN')" class="mb-4">
-    <h2 class="h5" th:text="#{pharmacy.home.queue}">Signed prescriptions</h2>
-    <p th:if="${queue == null or #lists.isEmpty(queue)}" class="text-muted" th:text="#{pharmacy.home.noQueue}">None</p>
-    <table th:if="${queue != null and !#lists.isEmpty(queue)}" class="table table-sm table-striped">
-      <thead><tr><th>MRN</th><th>Patient</th><th>Items</th><th>Signed</th><th></th></tr></thead>
-      <tbody>
-      <tr th:each="row : ${queue}">
-        <td th:text="${row.mrn}">MRN</td>
-        <td th:text="${row.patientName}">Name</td>
-        <td th:text="${row.itemCount}">1</td>
-        <td th:text="${row.signedAt}">-</td>
-        <td><a class="btn btn-sm btn-primary" th:href="@{/pharmacy/rx/{id}(id=${row.id})}" th:text="#{pharmacy.dispense.title}">Open</a></td>
-      </tr>
-      </tbody>
-    </table>
+  <section sec:authorize="hasAnyRole('PHARMACIST','ADMIN')" class="mb-4" aria-labelledby="pharm-queue">
+    <h2 id="pharm-queue" class="h5" th:text="#{pharmacy.home.queue}">Signed prescriptions</h2>
+    <div th:if="${queue == null or #lists.isEmpty(queue)}"
+         th:replace="~{layout/fragments/empty-state :: empty('pharmacy.home.noQueue', 'pharmacy.home.noQueueHint')}"></div>
+    <div th:if="${queue != null and !#lists.isEmpty(queue)}" class="table-responsive mf-table-wrap">
+      <table class="table table-sm mf-table">
+        <thead><tr>
+          <th th:text="#{pharmacy.col.mrn}">MRN</th>
+          <th th:text="#{pharmacy.col.patient}">Patient</th>
+          <th th:text="#{pharmacy.col.items}">Items</th>
+          <th th:text="#{pharmacy.col.signed}">Signed</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        <tr th:each="row : ${queue}">
+          <td th:text="${row.mrn}">MRN</td>
+          <td th:text="${row.patientName}">Name</td>
+          <td th:text="${row.itemCount}">1</td>
+          <td th:text="${row.signedAt}">-</td>
+          <td><a class="btn btn-sm btn-teal" th:href="@{/pharmacy/rx/{id}(id=${row.id})}" th:text="#{pharmacy.dispense.title}">Open</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
-  <section sec:authorize="hasAnyRole('PHARMACIST','ADMIN')" class="mb-4" th:if="${lowStock != null and !#lists.isEmpty(lowStock)}">
-    <h2 class="h5" th:text="#{pharmacy.home.lowStock}">Low stock</h2>
-    <ul class="list-unstyled">
-      <li th:each="s : ${lowStock}" th:text="|${s.brandName()} ${s.strength()} — ${s.quantity()}/${s.reorderLevel()}|">Napa</li>
+  <section sec:authorize="hasAnyRole('PHARMACIST','ADMIN')" class="mb-4"
+           th:if="${lowStock != null and !#lists.isEmpty(lowStock)}" aria-labelledby="pharm-low">
+    <h2 id="pharm-low" class="h5" th:text="#{pharmacy.home.lowStock}">Low stock</h2>
+    <ul class="list-unstyled mb-0">
+      <li th:each="s : ${lowStock}" class="mf-tile-meta"
+          th:text="|${s.brandName()} ${s.strength()} — ${s.quantity()}/${s.reorderLevel()}|">Napa</li>
     </ul>
   </section>
 
-  <section sec:authorize="hasAnyRole('DOCTOR','ADMIN')" th:if="${pendingSubstitutions != null and !#lists.isEmpty(pendingSubstitutions)}">
-    <h2 class="h5" th:text="#{pharmacy.home.substitutions}">Pending</h2>
-    <p><a th:href="@{/pharmacy/substitutions}" th:text="#{pharmacy.nav.substitutions}">Review</a></p>
+  <section sec:authorize="hasAnyRole('DOCTOR','ADMIN')"
+           th:if="${pendingSubstitutions != null and !#lists.isEmpty(pendingSubstitutions)}"
+           aria-labelledby="pharm-sub">
+    <h2 id="pharm-sub" class="h5" th:text="#{pharmacy.home.substitutions}">Pending</h2>
+    <p class="mb-0"><a class="btn btn-sm btn-outline-secondary" th:href="@{/pharmacy/substitutions}" th:text="#{pharmacy.nav.substitutions}">Review</a></p>
   </section>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

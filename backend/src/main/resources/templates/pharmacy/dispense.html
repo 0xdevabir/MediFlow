@@ -1,37 +1,40 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head(${pageTitleKey})}"></head>
-<body>
-<nav th:replace="~{layout/base :: nav}"></nav>
-<main class="container pb-5">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
+<div th:replace="~{layout/base :: nav}"></div>
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <p><a th:href="@{/pharmacy}">&larr; Pharmacy</a></p>
-  <h1 class="h3" th:text="#{pharmacy.dispense.title}">Dispense</h1>
+  <p class="mb-2"><a th:href="@{/pharmacy}">&larr; <span th:text="#{pharmacy.home.title}">Pharmacy</span></a></p>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='pharmacy.dispense.title', subtitleKey='pharmacy.dispense.lead')}"></div>
 
-  <div th:if="${view.blocked}" class="alert alert-danger" th:text="#{pharmacy.dispense.blocked}">Blocked</div>
-  <div th:if="${view.alreadyDispensedAlert}" class="alert alert-warning" th:text="#{pharmacy.dispense.alreadyAlert}">Alert</div>
+  <div th:if="${view.blocked}" class="alert alert-danger" role="alert" th:text="#{pharmacy.dispense.blocked}">Blocked</div>
+  <div th:if="${view.alreadyDispensedAlert}" class="alert alert-warning" role="alert" th:text="#{pharmacy.dispense.alreadyAlert}">Alert</div>
 
-  <p>
+  <p class="mb-3">
     <strong th:text="${view.patientName}">Name</strong>
     — MRN <span th:text="${view.patientMrn}">MRN</span>
   </p>
 
-  <section class="mb-4" th:unless="${view.blocked}">
-    <h2 class="h5" th:text="#{pharmacy.dispense.identity}">Identity</h2>
-    <p class="small text-muted">Provide a QR token <em>or</em> two distinct identifiers. Required for every dispense.</p>
+  <section class="mb-4" th:unless="${view.blocked}" aria-labelledby="disp-id">
+    <h2 id="disp-id" class="h5" th:text="#{pharmacy.dispense.identity}">Identity</h2>
+    <p class="small text-muted mb-0" th:text="#{pharmacy.dispense.identityHint}">
+      Provide a QR token or two distinct identifiers. Required for every dispense.
+    </p>
   </section>
 
-  <section class="mb-4">
-    <h2 class="h5" th:text="#{pharmacy.dispense.items}">Items</h2>
-    <div class="border rounded p-3 mb-3" th:each="item : ${view.items}">
+  <section class="mb-4" aria-labelledby="disp-items">
+    <h2 id="disp-items" class="h5" th:text="#{pharmacy.dispense.items}">Items</h2>
+    <div class="mf-tile mb-3" th:each="item : ${view.items}">
       <div class="fw-semibold">
         <span th:text="${item.brandName() != null ? item.brandName() : '—'}">Brand</span>
         → <span th:text="${item.genericName()}">Generic</span>
-        <span class="badge text-bg-secondary" th:if="${item.dispensed()}">dispensed</span>
+        <span class="badge text-bg-secondary" th:if="${item.dispensed()}" th:text="#{pharmacy.dispense.dispensedBadge}">dispensed</span>
       </div>
       <div class="small text-muted"
            th:text="|${item.dose()} · ${item.route()} · ${item.frequency()} · ${item.duration()}|">dose</div>
-      <div class="small" th:text="|Stock: ${item.stockQty()}|">Stock</div>
+      <div class="small" th:text="|#{pharmacy.stock.qty}: ${item.stockQty()}|">Stock</div>
 
       <form th:unless="${item.dispensed() or view.blocked}" class="row g-2 align-items-end mt-2"
             th:action="@{/pharmacy/rx/{id}/dispense(id=${view.rx.id})}" method="post">
@@ -52,14 +55,14 @@
         <div class="col-md-2">
           <label class="form-label" th:text="#{pharmacy.dispense.batch}">Batch</label>
           <input class="form-control form-control-sm" name="batchId" required
-                 th:placeholder="'UUID — see batches'"/>
+                 th:placeholder="#{pharmacy.dispense.batchHint}"/>
         </div>
         <div class="col-md-1">
           <label class="form-label" th:text="#{pharmacy.dispense.qty}">Qty</label>
           <input class="form-control form-control-sm" type="number" min="1" name="quantity" value="1" required/>
         </div>
         <div class="col-md-2">
-          <button class="btn btn-sm btn-primary w-100" type="submit" th:text="#{pharmacy.dispense.dispense}">Dispense</button>
+          <button class="btn btn-sm btn-teal w-100" type="submit" th:text="#{pharmacy.dispense.dispense}">Dispense</button>
         </div>
       </form>
       <p th:if="${item.stockQty() == 0 and !item.dispensed()}" class="text-danger small mb-1" th:text="#{pharmacy.dispense.outOfStock}">OOS</p>
@@ -78,34 +81,39 @@
                     th:text="|${b.brandName()} ${b.strength()}|"></option>
           </select>
         </div>
-        <div class="col-md-5">
-          <input class="form-control form-control-sm" name="reason" required minlength="5" placeholder="Reason"/>
+        <div class="col-md-4">
+          <input class="form-control form-control-sm" name="reason" required minlength="5"
+                 th:placeholder="#{pharmacy.error.reasonRequired}"/>
         </div>
         <div class="col-md-3">
-          <button class="btn btn-sm btn-outline-warning w-100" type="submit" th:text="#{pharmacy.dispense.substitute}">Request</button>
+          <button class="btn btn-sm btn-outline-secondary w-100" type="submit" th:text="#{pharmacy.dispense.substitute}">Request</button>
         </div>
       </form>
     </div>
   </section>
 
-  <div class="row g-3" th:unless="${view.blocked}">
-    <div class="col-md-6">
-      <form th:action="@{/pharmacy/rx/{id}/send-back(id=${view.rx.id})}" method="post">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <label class="form-label" th:text="#{pharmacy.dispense.sendBack}">Send back</label>
-        <textarea class="form-control" name="reason" required minlength="5" rows="2"></textarea>
-        <button class="btn btn-outline-danger btn-sm mt-2" type="submit" th:text="#{pharmacy.dispense.sendBack}">Send back</button>
-      </form>
-    </div>
-    <div class="col-md-6">
-      <form th:action="@{/pharmacy/rx/{id}/refer(id=${view.rx.id})}" method="post">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <label class="form-label" th:text="#{pharmacy.dispense.refer}">Refer</label>
-        <textarea class="form-control" name="reason" required minlength="5" rows="2"></textarea>
-        <button class="btn btn-outline-secondary btn-sm mt-2" type="submit" th:text="#{pharmacy.dispense.refer}">Refer</button>
-      </form>
-    </div>
-  </div>
+  <section class="mb-3" th:unless="${view.blocked}">
+    <form class="row g-2" th:action="@{/pharmacy/rx/{id}/send-back(id=${view.rx.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="col-md-8">
+        <input class="form-control form-control-sm" name="reason" required minlength="5"
+               th:placeholder="#{pharmacy.dispense.sendBack}"/>
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-sm btn-outline-danger w-100" type="submit" th:text="#{pharmacy.dispense.sendBack}">Send back</button>
+      </div>
+    </form>
+    <form class="row g-2 mt-2" th:action="@{/pharmacy/rx/{id}/refer(id=${view.rx.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="col-md-8">
+        <input class="form-control form-control-sm" name="reason" required minlength="5"
+               th:placeholder="#{pharmacy.dispense.refer}"/>
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-sm btn-outline-secondary w-100" type="submit" th:text="#{pharmacy.dispense.refer}">Refer</button>
+      </div>
+    </form>
+  </section>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

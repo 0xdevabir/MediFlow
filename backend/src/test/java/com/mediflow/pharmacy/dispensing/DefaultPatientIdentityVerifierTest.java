@@ -1,27 +1,34 @@
 package com.mediflow.pharmacy.dispensing;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.mediflow.shared.domain.Patient;
+import com.mediflow.shared.port.PatientQrPort;
 import com.mediflow.shared.repo.PatientRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 
 class DefaultPatientIdentityVerifierTest {
 
   private PatientRepository patients;
+  private ObjectProvider<PatientQrPort> qrPort;
   private DefaultPatientIdentityVerifier verifier;
   private UUID patientId;
   private Patient patient;
 
   @BeforeEach
+  @SuppressWarnings("unchecked")
   void setUp() {
     patients = mock(PatientRepository.class);
-    verifier = new DefaultPatientIdentityVerifier(patients);
+    qrPort = mock(ObjectProvider.class);
+    when(qrPort.getIfAvailable()).thenReturn(null);
+    verifier = new DefaultPatientIdentityVerifier(patients, qrPort);
     patientId = UUID.randomUUID();
     patient = new Patient();
     patient.setId(patientId);
@@ -34,8 +41,19 @@ class DefaultPatientIdentityVerifierTest {
   }
 
   @Test
-  void qrNeverAcceptedByDefault() {
+  void qrNeverAcceptedWithoutPort() {
     assertTrue(verifier.verifyQr("anything").isEmpty());
+  }
+
+  @Test
+  void qrAcceptedWhenPortResolvesPatient() {
+    PatientQrPort port = mock(PatientQrPort.class);
+    when(qrPort.getIfAvailable()).thenReturn(port);
+    when(port.resolvePatientId("tok-1")).thenReturn(Optional.of(patientId));
+    var verified = verifier.verifyQr("tok-1");
+    assertTrue(verified.isPresent());
+    assertEquals(patientId, verified.get().patientId());
+    assertEquals(PatientIdentityPort.Method.QR, verified.get().method());
   }
 
   @Test

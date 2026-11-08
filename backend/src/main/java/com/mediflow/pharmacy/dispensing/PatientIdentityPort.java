@@ -4,9 +4,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Patient identity check before dispensing. QR verification belongs to T02; until a shared port
- * exists, the default implementation only supports two-identifier checks (safe default: QR never
- * auto-accepts).
+ * Patient identity check before dispensing. Prefer {@link
+ * com.mediflow.shared.port.PatientQrPort} when available; two-identifier fallback remains local.
  */
 public interface PatientIdentityPort {
 
@@ -18,8 +17,8 @@ public interface PatientIdentityPort {
   record VerifiedIdentity(UUID patientId, Method method) {}
 
   /**
-   * Verify a patient QR token. Safe default returns empty (never guesses). A T02 bean may replace
-   * this when promoted to shared.
+   * Verify a patient QR token via {@code PatientQrPort} when that bean exists; otherwise empty
+   * (never guesses).
    */
   Optional<VerifiedIdentity> verifyQr(String qrToken);
 

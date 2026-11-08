@@ -1,28 +1,41 @@
 package com.mediflow.pharmacy.dispensing;
 
 import com.mediflow.shared.domain.Patient;
+import com.mediflow.shared.port.PatientQrPort;
 import com.mediflow.shared.repo.PatientRepository;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 
 /**
- * Safe default: QR tokens are never accepted here (T02 owns signing). Two-identifier checks compare
- * against MRN, national ID, phone (normalised digits), and "given family" display name.
+ * Patient identity before dispense. When a {@link PatientQrPort} bean is present (V2-03), QR tokens
+ * resolve via that port; otherwise QR is rejected (safe default). Two-identifier checks always
+ * compare against MRN, national ID, phone (normalised digits), and "given family" display name.
  */
 public class DefaultPatientIdentityVerifier implements PatientIdentityPort {
 
   private final PatientRepository patients;
+  private final ObjectProvider<PatientQrPort> qrPort;
 
-  public DefaultPatientIdentityVerifier(PatientRepository patients) {
+  public DefaultPatientIdentityVerifier(
+      PatientRepository patients, ObjectProvider<PatientQrPort> qrPort) {
     this.patients = patients;
+    this.qrPort = qrPort;
   }
 
   @Override
   public Optional<VerifiedIdentity> verifyQr(String qrToken) {
-    // Safe default — never guess from an opaque token without T02's verifier.
-    return Optional.empty();
+    if (blank(qrToken)) {
+      return Optional.empty();
+    }
+    PatientQrPort qr = qrPort.getIfAvailable();
+    if (qr == null) {
+      return Optional.empty();
+    }
+    return qr.resolvePatientId(qrToken.trim())
+        .map(id -> new VerifiedIdentity(id, Method.QR));
   }
 
   @Override

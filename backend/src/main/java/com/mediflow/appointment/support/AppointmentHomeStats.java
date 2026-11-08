@@ -1,6 +1,5 @@
 package com.mediflow.appointment.support;
 
-import com.mediflow.appointment.queue.QueueClock;
 import com.mediflow.shared.port.ClockPort;
 import java.time.LocalDate;
 import java.util.UUID;

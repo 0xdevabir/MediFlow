@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  level: CRITICAL | URGENT | NORMAL | SUCCESS | AI (case-insensitive)
+  label: already-resolved text, or pass labelKey for #{...}
+*/-->
+<span th:fragment="badge(level, label)"
+      class="mf-badge"
+      th:classappend="${#strings.equalsIgnoreCase(level,'CRITICAL')} ? ' mf-badge-critical'
+                      : (${#strings.equalsIgnoreCase(level,'URGENT')} ? ' mf-badge-urgent'
+                      : (${#strings.equalsIgnoreCase(level,'SUCCESS')} ? ' mf-badge-success'
+                      : (${#strings.equalsIgnoreCase(level,'AI')} ? ' mf-badge-ai'
+                      : ' mf-badge-normal')))"
+      th:text="${label}">Status</span>
+
+<span th:fragment="badgeKey(level, labelKey)"
+      class="mf-badge"
+      th:classappend="${#strings.equalsIgnoreCase(level,'CRITICAL')} ? ' mf-badge-critical'
+                      : (${#strings.equalsIgnoreCase(level,'URGENT')} ? ' mf-badge-urgent'
+                      : (${#strings.equalsIgnoreCase(level,'SUCCESS')} ? ' mf-badge-success'
+                      : (${#strings.equalsIgnoreCase(level,'AI')} ? ' mf-badge-ai'
+                      : ' mf-badge-normal')))"
+      th:text="#{__${labelKey}__}">Status</span>
+</body>
+</html>

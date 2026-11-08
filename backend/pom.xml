@@ -149,6 +149,12 @@
       <artifactId>bootstrap</artifactId>
       <version>5.3.3</version>
     </dependency>
+    <!-- Chart.js for V2-06 vitals / clinical charts (consumers must not edit pom). -->
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>chart.js</artifactId>
+      <version>4.4.4</version>
+    </dependency>
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>webjars-locator-lite</artifactId>

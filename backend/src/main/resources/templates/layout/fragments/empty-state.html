@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="empty(titleKey, bodyKey)" class="mf-empty" role="status">
+  <p class="mf-empty-title" th:text="#{__${titleKey}__}">Nothing here</p>
+  <p class="mb-0" th:if="${bodyKey != null and !#strings.isEmpty(bodyKey)}"
+     th:text="#{__${bodyKey}__}">Configure this module to populate the list.</p>
+</div>
+</body>
+</html>

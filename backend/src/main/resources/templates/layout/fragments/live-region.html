@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* Wrap SSE / poll status text. politeness: polite | assertive */-->
+<div th:fragment="region(id, politeness)"
+     th:id="${id}"
+     class="mf-live-region"
+     th:attr="aria-live=${politeness != null ? politeness : 'polite'}"
+     aria-atomic="true"
+     role="status">
+  <span class="mf-live-pulse me-1" aria-hidden="true"></span>
+  <span class="mf-live-text" th:text="${liveText} ?: #{live.waiting}">Waiting for updates…</span>
+</div>
+</body>
+</html>

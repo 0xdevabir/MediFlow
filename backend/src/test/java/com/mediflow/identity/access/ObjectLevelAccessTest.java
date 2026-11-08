@@ -168,4 +168,17 @@ class ObjectLevelAccessTest {
     when(facts.activeBreakGlass(er, patient, NOW)).thenReturn(true);
     assertThat(port.isErAssigned(er, patient)).isTrue();
   }
+
+  @Test
+  void resourceHelpersMatchMatrixCells() {
+    signIn(Role.ROLE_ADMIN);
+    assertThat(policy.canManageUsers()).isTrue();
+    assertThat(policy.canReadAudit(null)).isTrue();
+    signIn(Role.ROLE_NURSE);
+    assertThat(policy.canManageUsers()).isFalse();
+    when(facts.erAssignedOnActiveAlert(user, patient)).thenReturn(true);
+    signIn(Role.ROLE_ER);
+    assertThat(policy.canReadVitals(patient)).isTrue();
+    assertThat(policy.isErAssigned(patient)).isTrue();
+  }
 }

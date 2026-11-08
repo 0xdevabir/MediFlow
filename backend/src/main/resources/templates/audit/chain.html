@@ -31,7 +31,7 @@
   <section aria-labelledby="chain-history">
     <h2 id="chain-history" class="h5 mb-3" th:text="#{audit.chain.history}">Recent checks</h2>
     <div th:if="${recent == null or recent.isEmpty()}"
-         th:replace="~{layout/fragments/empty-state :: empty('audit.chain.none', null)}"></div>
+         th:replace="~{layout/fragments/empty-state :: empty('audit.chain.none', '')}"></div>
     <ul class="list-group" th:unless="${recent == null or recent.isEmpty()}">
       <li class="list-group-item d-flex flex-wrap justify-content-between gap-2" th:each="c : ${recent}">
         <span th:text="${c.message}">m</span>

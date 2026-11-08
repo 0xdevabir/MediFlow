@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  Optional role-home fragments for V2-01 home.html wiring.
+  ADMIN: directory / staff / admin hub.
+  CLINICAL_APPROVER: pending dual-approval cue (no PHI).
+*/-->
+<th:block th:fragment="admin">
+  <div class="mf-tile">
+    <h3 class="mf-tile-title" th:text="#{admin.home.adminTitle}">Administration</h3>
+    <p class="mf-tile-meta" th:text="#{admin.home.adminBody}">Directory, staff, settings, audit</p>
+    <a class="btn btn-sm btn-teal" th:href="@{/admin}" th:text="#{home.cta.open}">Open</a>
+  </div>
+  <div class="mf-tile">
+    <h3 class="mf-tile-title" th:text="#{admin.dashboard.staff}">Staff users</h3>
+    <p class="mf-tile-meta" th:text="#{admin.dashboard.staffHint}">Managed in identity</p>
+    <a class="btn btn-sm btn-teal" th:href="@{/identity/staff}" th:text="#{home.cta.open}">Open</a>
+  </div>
+</th:block>
+
+<th:block th:fragment="approver">
+  <div class="mf-tile">
+    <h3 class="mf-tile-title" th:text="#{admin.home.pendingTitle}">Pending dual approvals</h3>
+    <p class="mf-tile-meta" th:text="#{admin.home.pendingBody}">Governed setting changes</p>
+    <a class="btn btn-sm btn-teal" th:href="@{/admin}" th:text="#{home.cta.open}">Open</a>
+  </div>
+</th:block>
+</body>
+</html>

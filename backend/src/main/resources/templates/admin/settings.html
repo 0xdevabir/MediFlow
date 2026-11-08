@@ -43,7 +43,7 @@
   <section class="mb-5" aria-labelledby="current-settings">
     <h2 id="current-settings" class="h5 mb-3" th:text="#{admin.settings.current}">Current values</h2>
     <div th:if="${settings == null or settings.isEmpty()}"
-         th:replace="~{layout/fragments/empty-state :: empty('admin.settings.emptyCurrent', null)}"></div>
+         th:replace="~{layout/fragments/empty-state :: empty('admin.settings.emptyCurrent', '')}"></div>
     <div class="table-responsive mf-panel p-0" th:unless="${settings == null or settings.isEmpty()}">
       <table class="table mf-data-table mf-table-stack align-middle mb-0">
         <thead>

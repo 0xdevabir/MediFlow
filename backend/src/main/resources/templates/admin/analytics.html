@@ -9,7 +9,7 @@
   <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='admin.analytics.title', subtitleKey='admin.analytics.intro')}"></div>
 
   <div th:if="${kpis == null or kpis.isEmpty()}"
-       th:replace="~{layout/fragments/empty-state :: empty('admin.analytics.empty', null)}"></div>
+       th:replace="~{layout/fragments/empty-state :: empty('admin.analytics.empty', '')}"></div>
 
   <div class="mf-role-grid mf-role-grid-3" th:unless="${kpis == null or kpis.isEmpty()}">
     <section class="mf-tile" th:each="entry : ${kpis}">

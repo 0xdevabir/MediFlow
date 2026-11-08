@@ -3,12 +3,14 @@ package com.mediflow.notification.event;
 import com.mediflow.notification.domain.Channel;
 import com.mediflow.notification.domain.NotificationEventType;
 import com.mediflow.notification.domain.Priority;
+import com.mediflow.notification.repo.BookedAppointmentRef;
 import com.mediflow.notification.repo.RecipientLookupRepository;
 import com.mediflow.notification.service.NotificationService;
 import com.mediflow.notification.service.NotificationService.Request;
 import com.mediflow.notification.service.RecipientResolver;
 import com.mediflow.notification.service.ReminderService;
 import com.mediflow.notification.service.StaffCallListService;
+import com.mediflow.shared.domain.AppointmentStatus;
 import com.mediflow.shared.domain.Role;
 import com.mediflow.shared.domain.TriageLevel;
 import com.mediflow.shared.event.DomainEvents;
@@ -196,18 +198,56 @@ public class NotificationEventListeners {
         });
   }
 
+  /**
+   * Doctor schedule / role edit left booked slots in place: notify each resolvable patient (and
+   * replan visit reminders). No-ops cleanly when the affected-slot list is empty.
+   */
   @TransactionalEventListener(fallbackExecution = true)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void on(DomainEvents.PractitionerScheduleChanged e) {
     safely(
         e,
-        () ->
+        () -> {
+          List<UUID> slotIds = e.affectedBookedSlotIds();
+          if (slotIds.isEmpty()) {
             log.info(
-                "Practitioner schedule changed role={} affectedBookedSlots={}",
+                "Practitioner schedule changed role={} with no booked slots to notify",
+                e.practitionerRoleId());
+            return;
+          }
+          List<BookedAppointmentRef> booked =
+              lookup.findActiveAppointmentsBySlotIds(slotIds, AppointmentStatus.CANCELLED);
+          if (booked.isEmpty()) {
+            log.info(
+                "Practitioner schedule changed role={} slots={} but no active appointments",
                 e.practitionerRoleId(),
-                e.affectedBookedSlotIds().size()));
+                slotIds.size());
+            return;
+          }
+          for (BookedAppointmentRef appt : booked) {
+            reminders.scheduleForAppointment(
+                appt.appointmentId(), appt.patientId(), appt.startsAt());
+            String patient = name(appt.patientId());
+            notifications.send(
+                Request.toPatient(
+                    NotificationEventType.SCHEDULE_CHANGED,
+                    appt.patientId(),
+                    patient,
+                    appt.startsAt()));
+            doctorUser(appt.appointmentId())
+                .ifPresent(
+                    doc ->
+                        notifications.send(
+                            Request.toUser(
+                                NotificationEventType.SCHEDULE_CHANGED,
+                                doc,
+                                patient,
+                                appt.startsAt())));
+          }
+        });
   }
 
+  /** Clinical / Rx follow-up date → day-before + day-of visit reminders. */
   @TransactionalEventListener(fallbackExecution = true)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void on(DomainEvents.FollowUpScheduled e) {

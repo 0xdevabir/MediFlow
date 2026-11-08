@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.queue.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-wide mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{lab.queue.title}">Lab queue</h1>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='lab.queue.title', subtitleKey=null)}"></div>
 
-  <form class="mb-3" method="get" th:action="@{/lab/queue}">
-    <label class="form-label" th:text="#{lab.queue.filter}">Filter</label>
-    <select class="form-select" style="max-width: 16rem" name="status" onchange="this.form.submit()">
+  <form method="get" th:action="@{/lab/queue}" class="mb-4" style="max-width: 16rem">
+    <label class="form-label" th:text="#{lab.queue.filter}">Status filter</label>
+    <select class="form-select" name="status" onchange="this.form.submit()">
       <option value="" th:text="#{lab.queue.all}">All open</option>
       <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${status == s}"></option>
     </select>
   </form>
 
-  <section class="mb-4" th:if="${!criticalTasks.isEmpty()}">
-    <h2 class="h5" th:text="#{lab.queue.criticalTitle}">Critical phone tasks</h2>
+  <section class="mb-4" th:if="${criticalTasks != null and !criticalTasks.isEmpty()}" aria-labelledby="lab-critical">
+    <h2 id="lab-critical" class="h5 mb-3" th:text="#{lab.queue.criticalTitle}">Critical phone tasks</h2>
     <div class="list-group mb-3">
       <div class="list-group-item" th:each="row : ${criticalTasks}">
-        <div class="fw-semibold" th:text="${row.order().itemName()}">Test</div>
+        <span th:replace="~{layout/fragments/status-badge :: badgeKey(level='CRITICAL', labelKey='lab.reports.critical')}"></span>
+        <div class="fw-semibold mt-1" th:text="${row.order().itemName()}">Test</div>
         <div class="small text-muted" th:text="${row.order().patientName()}">Patient</div>
         <form class="mt-2" method="post" th:action="@{/lab/queue/critical/{id}/done(id=${row.task().id})}">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -31,28 +33,37 @@
     </div>
   </section>
 
-  <p th:if="${orders.isEmpty()}" class="text-muted" th:text="#{lab.queue.empty}">Empty</p>
-  <table class="table table-sm" th:unless="${orders.isEmpty()}">
-    <thead>
-    <tr>
-      <th th:text="#{lab.reports.item}">Item</th>
-      <th th:text="#{lab.queue.patient}">Patient</th>
-      <th th:text="#{lab.reports.status}">Status</th>
-      <th></th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="o : ${orders}">
-      <td th:text="${o.itemName()}">Test</td>
-      <td>
-        <span th:text="${o.patientName()}">Name</span>
-        <span class="small text-muted" th:text="${o.patientMrn()}"></span>
-      </td>
-      <td th:text="${o.status()}">ORDERED</td>
-      <td><a class="btn btn-sm btn-outline-primary" th:href="@{/lab/queue/{id}(id=${o.orderId()})}" th:text="#{lab.queue.open}">Open</a></td>
-    </tr>
-    </tbody>
-  </table>
+  <div th:if="${orders == null or orders.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty(titleKey='lab.queue.empty', bodyKey=null)}"></div>
+
+  <div class="table-responsive" th:unless="${orders == null or orders.isEmpty()}">
+    <table class="table table-sm align-middle">
+      <thead>
+      <tr>
+        <th th:text="#{lab.reports.item}">Item</th>
+        <th th:text="#{lab.queue.patient}">Patient</th>
+        <th th:text="#{lab.reports.status}">Status</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="o : ${orders}">
+        <td th:text="${o.itemName()}">Test</td>
+        <td>
+          <span th:text="${o.patientName()}">Name</span>
+          <span class="small text-muted" th:text="${o.patientMrn()}"></span>
+        </td>
+        <td>
+          <span th:replace="~{layout/fragments/status-badge :: badge(level='NORMAL', label=${o.status()})}"></span>
+        </td>
+        <td>
+          <a class="btn btn-sm btn-teal" th:href="@{/lab/queue/{id}(id=${o.orderId()})}"
+             th:text="#{lab.queue.open}">Open</a>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

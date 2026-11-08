@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.reports.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{lab.reports.title}">My lab reports</h1>
-  <p th:if="${orders.isEmpty()}" class="text-muted" th:text="#{lab.reports.empty}">No orders.</p>
-  <div class="table-responsive" th:unless="${orders.isEmpty()}">
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='lab.reports.title', subtitleKey=null)}"></div>
+
+  <div th:if="${orders == null or orders.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty(titleKey='lab.reports.empty', bodyKey=null)}"></div>
+
+  <div class="table-responsive" th:unless="${orders == null or orders.isEmpty()}">
     <table class="table table-sm align-middle">
       <thead>
       <tr>
@@ -21,12 +25,17 @@
       <tr th:each="o : ${orders}">
         <td th:text="${o.itemName()}">Test</td>
         <td>
-          <span th:text="${o.status()}">ORDERED</span>
-          <span th:if="${o.released() and o.abnormal()}" class="badge bg-warning text-dark ms-1" th:text="#{lab.reports.abnormal}">Abnormal</span>
-          <span th:if="${o.released() and o.critical()}" class="badge bg-danger ms-1" th:text="#{lab.reports.critical}">Critical</span>
+          <span th:replace="~{layout/fragments/status-badge :: badge(level='NORMAL', label=${o.status()})}"></span>
+          <span th:if="${o.released() and o.abnormal()}"
+                th:replace="~{layout/fragments/status-badge :: badgeKey(level='URGENT', labelKey='lab.reports.abnormal')}"></span>
+          <span th:if="${o.released() and o.critical()}"
+                th:replace="~{layout/fragments/status-badge :: badgeKey(level='CRITICAL', labelKey='lab.reports.critical')}"></span>
         </td>
         <td th:text="${o.orderedAt()}">—</td>
-        <td><a class="btn btn-sm btn-outline-primary" th:href="@{/lab/reports/{id}(id=${o.orderId()})}" th:text="#{lab.reports.view}">View</a></td>
+        <td>
+          <a class="btn btn-sm btn-outline-secondary" th:href="@{/lab/reports/{id}(id=${o.orderId()})}"
+             th:text="#{lab.reports.view}">View</a>
+        </td>
       </tr>
       </tbody>
     </table>

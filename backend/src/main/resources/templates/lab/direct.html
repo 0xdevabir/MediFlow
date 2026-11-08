@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.direct.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-2" th:text="#{lab.direct.title}">Direct lab test</h1>
-  <p class="text-muted" th:text="#{lab.direct.intro}">Choose from the approved list.</p>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='lab.direct.title', subtitleKey='lab.direct.intro')}"></div>
 
   <form class="mb-4" method="get" th:action="@{/lab/direct}">
     <label class="form-label" th:text="#{lab.direct.hospital}">Hospital</label>
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <button class="btn btn-primary align-self-start" type="submit" th:text="#{lab.direct.submit}">Book</button>
+    <button class="btn btn-teal align-self-start" type="submit" th:text="#{lab.direct.submit}">Book</button>
   </form>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>

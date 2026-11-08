@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('lab.doctor.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mf-panel-narrow mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-2" th:text="#{lab.doctor.title}">Order lab tests</h1>
-  <p class="text-muted" th:text="#{lab.doctor.intro}">Select tests.</p>
+  <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='lab.doctor.title', subtitleKey='lab.doctor.intro')}"></div>
+  <p class="small text-muted mb-3">
+    <span th:text="#{lab.doctor.deepLink}">Consultation deep-link</span>:
+    <code th:text="|/lab/encounters/${encounterId}/orders|">/lab/encounters/{id}/orders</code>
+  </p>
 
   <form method="post" th:action="@{/lab/encounters/{id}/orders(id=${encounterId})}" class="mb-4">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -17,15 +21,17 @@
         <span class="small text-muted" th:text="${item.code()}"></span>
       </label>
     </div>
-    <button class="btn btn-primary mt-3" type="submit" th:text="#{lab.doctor.submit}">Order</button>
+    <button class="btn btn-teal mt-3" type="submit" th:text="#{lab.doctor.submit}">Order</button>
   </form>
 
-  <h2 class="h5" th:text="#{lab.doctor.existing}">Existing</h2>
-  <ul th:if="${!orders.isEmpty()}">
-    <li th:each="o : ${orders}">
+  <h2 class="h5" th:text="#{lab.doctor.existing}">Existing orders</h2>
+  <div th:if="${orders == null or orders.isEmpty()}"
+       th:replace="~{layout/fragments/empty-state :: empty(titleKey='lab.doctor.none', bodyKey=null)}"></div>
+  <ul class="list-unstyled" th:unless="${orders == null or orders.isEmpty()}">
+    <li th:each="o : ${orders}" class="mb-2">
       <span th:text="${o.itemName()}">Test</span> —
-      <span th:text="${o.status()}">STATUS</span>
-      <a th:href="@{/lab/reports/{id}(id=${o.orderId()})}" th:text="#{lab.reports.view}">View</a>
+      <span th:replace="~{layout/fragments/status-badge :: badge(level='NORMAL', label=${o.status()})}"></span>
+      <a class="ms-2" th:href="@{/lab/reports/{id}(id=${o.orderId()})}" th:text="#{lab.reports.view}">View</a>
     </li>
   </ul>
 </main>

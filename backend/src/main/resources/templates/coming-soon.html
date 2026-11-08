@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('comingsoon.title')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mb-5">
   <div th:replace="~{layout/base :: flash}"></div>
-  <h1 class="h3 mb-3" th:text="#{comingsoon.title}">Coming soon</h1>
-  <p th:text="#{comingsoon.body}">This module will be implemented by its owning Wave-1 agent.</p>
+  <div th:replace="~{layout/fragments/empty-state :: empty('comingsoon.title', 'comingsoon.body')}"></div>
 </main>
 <th:block th:replace="~{layout/base :: scripts}"></th:block>
 </body>

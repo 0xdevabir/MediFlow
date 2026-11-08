@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="tile(titleKey, bodyKey, href, ctaKey)" class="mf-tile">
+  <h2 class="mf-tile-title" th:text="#{__${titleKey}__}">Tile</h2>
+  <p class="mf-tile-meta" th:text="#{__${bodyKey}__}">Configure module</p>
+  <a class="btn btn-sm btn-teal"
+     th:if="${href != null and !#strings.isEmpty(href)}"
+     th:href="@{__${href}__}"
+     th:text="#{__${ctaKey}__}">Open</a>
+</section>
+
+<section th:fragment="section(titleKey)" class="mb-4">
+  <h2 class="h5 mb-3" th:text="#{__${titleKey}__}">Section</h2>
+  <div class="mf-role-grid">
+    <th:block th:insert="~{this :: tiles}"></th:block>
+  </div>
+</section>
+</body>
+</html>

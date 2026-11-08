@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  page-header: titleKey (required), subtitleKey (optional), actions (optional markup)
+  Usage:
+    <div th:replace="~{layout/fragments/page-shell :: page-header(titleKey='home.title', subtitleKey='home.lead')}"></div>
+*/-->
+<header th:fragment="page-header(titleKey, subtitleKey)" class="mb-4">
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+    <div>
+      <h1 class="mf-page-title" th:text="#{__${titleKey}__}">Title</h1>
+      <p class="mf-page-subtitle mb-0"
+         th:if="${subtitleKey != null and !#strings.isEmpty(subtitleKey)}"
+         th:text="#{__${subtitleKey}__}">Subtitle</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2" th:if="${actions != null}" th:utext="${actions}"></div>
+  </div>
+</header>
+
+<main th:fragment="main-narrow" class="container mf-panel-narrow mb-5">
+  <th:block th:insert="~{this :: content}"></th:block>
+</main>
+
+<main th:fragment="main-wide" class="container mf-panel-wide mb-5">
+  <th:block th:insert="~{this :: content}"></th:block>
+</main>
+</body>
+</html>

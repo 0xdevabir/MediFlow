@@ -29,9 +29,10 @@ class LoggingPortStubsTest {
               .hasSingleBean(PatientAccessPort.class)
               .hasSingleBean(ObjectStoragePort.class)
               .hasSingleBean(ClockPort.class);
-          // Deny by default until T01 implements the assigned-patient rule.
-          assertThat(ctx.getBean(PatientAccessPort.class).isAssigned(UUID.randomUUID(), UUID.randomUUID()))
-              .isFalse();
+          // Deny by default until identity implements the assigned-patient / ER rules.
+          PatientAccessPort access = ctx.getBean(PatientAccessPort.class);
+          assertThat(access.isAssigned(UUID.randomUUID(), UUID.randomUUID())).isFalse();
+          assertThat(access.isErAssigned(UUID.randomUUID(), UUID.randomUUID())).isFalse();
         });
   }
 
@@ -47,3 +48,4 @@ class LoggingPortStubsTest {
             });
   }
 }
+

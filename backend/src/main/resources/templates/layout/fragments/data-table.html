@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* Wrap a standard <table> and add mf-table-stack for mobile stacked rows.
+     Cells should set data-label="Column name" for the stacked view. */-->
+<div th:fragment="responsive" class="table-responsive">
+  <table class="table mf-data-table mf-table-stack align-middle mb-0">
+    <th:block th:insert="~{this :: table}"></th:block>
+  </table>
+</div>
+</body>
+</html>

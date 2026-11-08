@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head('error.forbidden')}"></head>
-<body class="bg-light">
+<body class="mf-app">
+<a th:replace="~{layout/base :: skipLink}"></a>
 <div th:replace="~{layout/base :: nav}"></div>
-<main class="container mb-5">
+<main id="main" class="container mb-5">
   <h1 class="h3">403</h1>
   <p th:text="#{error.forbidden}">You are not allowed to access this resource.</p>
 </main>

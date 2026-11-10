@@ -54,5 +54,5 @@ node_modules/
 **/coverage/
 htmlcov/
 
-# Graft local graph cache
-graft/.graph/
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

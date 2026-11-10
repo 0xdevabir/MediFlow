@@ -32,6 +32,7 @@ public class MfaGateFilter extends OncePerRequestFilter {
           "/identity/password/",
           "/login",
           "/logout",
+          "/api/csrf",
           "/error",
           "/css/",
           "/js/",

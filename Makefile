@@ -1,5 +1,6 @@
 # MediFlow local stack. Needs Docker Desktop running.
 #   make up      build + start everything (infra, backend, AI) → http://localhost:8080
+#   make web     run the new Next.js frontend → http://localhost:3001
 #   make down    stop everything (keeps data)
 #   make help    all targets
 
@@ -7,7 +8,7 @@ COMPOSE := docker compose -f infra/docker-compose.yml -f infra/docker-compose.ap
 INFRA   := docker compose -f infra/docker-compose.yml --env-file .env
 
 .DEFAULT_GOAL := help
-.PHONY: help env up down restart logs logs-backend logs-ai ps build clean infra infra-down run-backend
+.PHONY: help env up down restart logs logs-backend logs-ai ps build clean infra infra-down run-backend web
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n",$$1,$$2}'
@@ -63,3 +64,6 @@ infra-down: ## Stop infra only
 run-backend: ## Run backend locally with ./mvnw (needs `make infra` first)
 	cd backend && set -a && . ../.env && set +a && \
 	  JAVA_HOME=$${JAVA_HOME:-/opt/homebrew/opt/openjdk@21} ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,pharmacy
+
+web: ## Run the Next.js frontend on http://localhost:3001 (proxies to the backend on :8080)
+	cd frontend && ([ -d node_modules ] || npm install) && npm run dev

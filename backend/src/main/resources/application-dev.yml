@@ -2,6 +2,11 @@ spring:
   thymeleaf:
     cache: false
 
+# The Next.js frontend (frontend/, :3001) proxies to this server; honour its X-Forwarded-* headers
+# so redirects (login, logout, classic pages) point back at :3001 instead of :8080.
+server:
+  forward-headers-strategy: framework
+
 logging:
   level:
     com.mediflow: DEBUG

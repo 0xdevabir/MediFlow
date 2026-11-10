@@ -33,6 +33,7 @@ public class SecurityConfig {
                         "/images/**",
                         "/actuator/health",
                         "/actuator/info",
+                        "/api/csrf",
                         "/login",
                         "/error")
                     .permitAll()

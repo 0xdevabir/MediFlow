@@ -237,6 +237,11 @@ public class DirectoryDevSeeder {
   }
 
   private UUID test(String code, String name, String loinc, String price) {
+    // The lab catalog migration may already have inserted this code — reuse it.
+    var existing = tests.findByCode(code);
+    if (existing.isPresent()) {
+      return existing.get().getId();
+    }
     LabTest t = new LabTest();
     t.setCode(code);
     t.setName(name);

@@ -114,3 +114,18 @@ def _dlq_payload(poison: PoisonMessage) -> bytes:
         {"jobId": poison.job_id, "reason": poison.reason, "status": "ERROR"},
         separators=(",", ":"),
     ).encode()
+
+
+def main() -> None:
+    """Standalone worker process (`python -m mediflow_ai.worker`)."""
+    from .logging_utils import setup_logging
+    from .pipeline import build_pipeline
+
+    setup_logging()
+    settings = Settings.from_env()
+    _maybe_start_metrics()
+    asyncio.run(run_worker(settings, build_pipeline(settings)))
+
+
+if __name__ == "__main__":
+    main()
